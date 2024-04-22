@@ -92,7 +92,7 @@ func makeHandleRunAsDaemon(lockService LockService, logger *util.Logger, daemon 
 			logger.Info("Daemon is already running.")
 		}
 
-		release, err := lockService.Acquire(LOCK_FILE)
+		release, err := lockService.Aquire(LOCK_FILE)
 		defer release()
 		if err != nil {
 			logger.Error("can not aquire lock", "err", err)

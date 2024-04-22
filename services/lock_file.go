@@ -30,7 +30,7 @@ func CreateLockFileService(logger *util.Logger) LockService {
 	return service
 }
 
-func (s *LockFileService) Acquire(lockName string) (util.IDisposable, error) {
+func (s *LockFileService) Aquire(lockName string) (util.IDisposable, error) {
 	if err := s.aquireLockFile(lockName); err != nil {
 		return func() {}, err
 	}
