@@ -6,7 +6,7 @@ import (
 )
 
 type LockService interface {
-	Aquire(lockName string) (util.IDisposable, error)
+	Acquire(lockName string) (util.IDisposable, error)
 	Release(lockName string) error
 	IsAquired(lockName string) bool
 	GetLockCommit(lockName string) (*models.LockCommit, error)
