@@ -17,7 +17,7 @@ func makeHandleStartDaemon(lockService common.LockService, logger *common.Logger
 }
 
 func startDaemon(lockService common.LockService, logger *common.Logger) (bool, error) {
-	if lockService.IsAquired(LOCK_FILE) {
+	if lockService.IsAcquired(LOCK_FILE) {
 		logger.Info("Daemon is already running.")
 		return false, nil
 	}

@@ -23,8 +23,8 @@ func CreateLockFileService(logger *common.Logger) common.LockService {
 	return service
 }
 
-func (s *LockFileService) Aquire(lockName string) (common.IDisposable, error) {
-	if err := s.aquireLockFile(lockName); err != nil {
+func (s *LockFileService) Acquire(lockName string) (common.IDisposable, error) {
+	if err := s.acquireLockFile(lockName); err != nil {
 		return func() { /* noop */ }, err
 	}
 
@@ -58,9 +58,9 @@ func (s *LockFileService) GetLockCommit(lockName string) (*models.LockCommit, er
 	return &lockfileCommit, nil
 }
 
-func (s *LockFileService) aquireLockFile(lockFile string) error {
-	if s.IsAquired(lockFile) {
-		return fmt.Errorf("can not aquire, already locked")
+func (s *LockFileService) acquireLockFile(lockFile string) error {
+	if s.IsAcquired(lockFile) {
+		return fmt.Errorf("can not acquire, already locked")
 	}
 
 	f, err := os.OpenFile(lockFile, os.O_CREATE|os.O_EXCL, 0600)
@@ -89,7 +89,7 @@ func (s *LockFileService) aquireLockFile(lockFile string) error {
 }
 
 func (s *LockFileService) releaseLockFile(lockFile string) error {
-	if !s.IsAquired(lockFile) {
+	if !s.IsAcquired(lockFile) {
 		return nil
 	}
 
@@ -107,7 +107,7 @@ func (s *LockFileService) releaseLockFile(lockFile string) error {
 	return nil
 }
 
-func (s *LockFileService) IsAquired(lockFile string) bool {
+func (s *LockFileService) IsAcquired(lockFile string) bool {
 	_, err := os.Stat(lockFile)
 	return !os.IsNotExist(err)
 }
