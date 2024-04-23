@@ -14,15 +14,15 @@ import (
 
 func makeHandleRunAsDaemon(lockService common.LockService, logger *common.Logger, daemon server.Daemon) models.CogoCLICommand {
 	handleDaemon := func(cmdInfo models.CogoCLIInfo) error {
-		if lockService.IsAquired(LOCK_FILE) {
+		if lockService.IsAcquired(LOCK_FILE) {
 			logger.Info("Daemon is already running.")
 		}
 
-		release, err := lockService.Aquire(LOCK_FILE)
+		release, err := lockService.Acquire(LOCK_FILE)
 		defer release()
 		if err != nil {
-			logger.Error("can not aquire lock", "err", err)
-			return fmt.Errorf("can not aquire lock: %w", err)
+			logger.Error("can not acquire lock", "err", err)
+			return fmt.Errorf("can not acquire lock: %w", err)
 		}
 
 		ctx, cancel := context.WithCancel(context.Background())
