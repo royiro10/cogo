@@ -43,20 +43,21 @@ func CreateCLI(deps CogoCLIDeps) *CogoCLI {
 
 	service := &CogoCLI{
 		commands: commands,
+		logger:   deps.Logger,
 	}
 
 	return service
 }
 
-func (cli *CogoCLI) Handle() {
-	if len(os.Args) < 2 {
+func (cli *CogoCLI) Handle(args []string) {
+	if len(args) < 1 {
 		cli.UsageMsg()
 		return
 	}
 
 	cmdInfo := models.CogoCLIInfo{
-		Commad: os.Args[1],
-		Args:   os.Args[1:],
+		Commad: args[0],
+		Args:   args[1:],
 	}
 
 	if command := cli.commands[cmdInfo.Commad]; command != nil {
@@ -83,7 +84,7 @@ func (cli *CogoCLI) UsageMsg() {
 		i++
 	}
 
-	fmt.Printf("Usage: cogo <%s>", strings.Join(avilableCommands, "|"))
+	fmt.Printf("Usage: cogo <%s>", strings.Join(avilableCommands, " | "))
 }
 
 func makeHandleRunAsDaemon(lockService LockService, logger *util.Logger, daemon Daemon) models.CogoCLICommand {
@@ -106,9 +107,11 @@ func makeHandleRunAsDaemon(lockService LockService, logger *util.Logger, daemon 
 		signal.Notify(stopChan, os.Interrupt, syscall.SIGTERM, syscall.SIGINT)
 
 		go func() {
-			<-stopChan
-			logger.Info("Received interrupt signal, stopping...")
+			sig := <-stopChan
+			logger.Info("Received interrupt signal, stopping...", "signal", sig.String())
 			cancel()
+			release()
+			os.Exit(1)
 		}()
 
 		daemon.Start(ctx)
@@ -133,7 +136,7 @@ func startDaemon(lockService LockService, logger *util.Logger) (bool, error) {
 
 	logger.Info("Starting daemon...", "arg0", os.Args[0])
 
-	cmd := exec.Command(os.Args[0], RUN_DAEMON)
+	cmd := exec.Command(os.Args[0], "--logger", RUN_DAEMON)
 	err := cmd.Start()
 	if err != nil {
 		return false, fmt.Errorf("cmd.Start failed: %w ", err)
@@ -176,11 +179,11 @@ func makeRunCommand(lockService LockService, logger *util.Logger) models.CogoCLI
 		}
 
 		client := CreateCogoClient(logger)
-		defer client.releaseFunc()
+		defer client.ipcClient.ReleaseFunc()
 
 		commandRequest := &CommandParameters{
 			SessionId: DefaultSessionKey,
-			Command:   strings.Join(cmdInfo.Args[1:], " "),
+			Command:   strings.Join(cmdInfo.Args[:], " "),
 		}
 
 		client.Run(commandRequest)

@@ -31,7 +31,7 @@ func (daemon *CogoDaemon) Start(ctx context.Context) {
 	logger := daemon.logger
 
 	logger.Info("Daemon is running...")
-	listener, closeFunc := util.MakeListener(logger)
+	listener, closeFunc := util.MakeIpcListener(logger)
 	defer closeFunc()
 
 	if listener == nil {
@@ -39,26 +39,27 @@ func (daemon *CogoDaemon) Start(ctx context.Context) {
 		return
 	}
 
-	logger.Debug("started socket server for IPC")
+	logger.Debug("started socket server for IPC", "addr", listener.Addr().String())
+
 	for {
 		select {
 		case <-ctx.Done():
+			logger.Info("stop recived cancel from ctx")
 			return
 		default:
-			daemon.handleMessage(listener)
+			logger.Debug("accepting connections")
+			conn, err := listener.Accept()
+			if err != nil {
+				daemon.logger.Error("Error accepting connection", "error", err)
+			}
+
+			go daemon.handleMessage(conn)
 		}
 	}
 }
 
-func (daemon *CogoDaemon) handleMessage(listener net.Listener) {
+func (daemon *CogoDaemon) handleMessage(conn net.Conn) {
 	logger := daemon.logger
-
-	logger.Debug("accepting connections")
-	conn, err := listener.Accept()
-	if err != nil {
-		logger.Error("Failed to accept connection", "err", err)
-		return
-	}
 	defer conn.Close()
 
 	rawMessage, err := bufio.NewReader(conn).ReadBytes('\n')

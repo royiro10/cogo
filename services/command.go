@@ -43,8 +43,20 @@ func (s *CommandService) HandleCommand(cp *CommandParameters) {
 	}
 
 	args := strings.Fields(cp.Command)
-	cmd := exec.Command(args[0], args[1:]...)
-	go session.Run(cmd)
+
+	curser := 0
+	for i := 0; i < len(args); i++ {
+		if args[i] == "&&" {
+			cmd := exec.Command(args[curser], args[curser+1:i]...)
+			go session.Run(cmd)
+			curser = i + 1
+		}
+	}
+
+	if curser != len(args) {
+		cmd := exec.Command(args[curser], args[curser+1:]...)
+		go session.Run(cmd)
+	}
 }
 
 type Session struct {
@@ -106,6 +118,7 @@ func (s *Session) Start() {
 
 		if err := s.executeCommand(s.runningCommand); err != nil {
 			// TODO: should I handle this???
+			s.logger.Error(err.Error(), cmd.String())
 			panic(err)
 		}
 
@@ -120,7 +133,7 @@ type ReplacePipeParameters struct {
 }
 
 func (s *Session) executeCommand(cmd *exec.Cmd) error {
-	s.logger.Info("execution", "command", cmd.String())
+	s.logger.Debug("execution", "command", cmd.String())
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
 		return err
