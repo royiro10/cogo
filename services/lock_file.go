@@ -7,27 +7,25 @@ import (
 	"os"
 	"time"
 
+	"github.com/royiro10/cogo/common"
 	"github.com/royiro10/cogo/models"
-	"github.com/royiro10/cogo/util"
 )
 
 type LockFileService struct {
-	logger    *util.Logger
-	isAquired bool
+	logger *common.Logger
 }
 
-func CreateLockFileService(logger *util.Logger) LockService {
+func CreateLockFileService(logger *common.Logger) common.LockService {
 	service := &LockFileService{
-		logger:    logger,
-		isAquired: false,
+		logger: logger,
 	}
 
 	return service
 }
 
-func (s *LockFileService) Aquire(lockName string) (util.IDisposable, error) {
+func (s *LockFileService) Aquire(lockName string) (common.IDisposable, error) {
 	if err := s.aquireLockFile(lockName); err != nil {
-		return func() {}, err
+		return func() { /* noop */ }, err
 	}
 
 	return func() { s.releaseLockFile(lockName) }, nil
@@ -97,12 +95,12 @@ func (s *LockFileService) releaseLockFile(lockFile string) error {
 
 	lockCommit, err := s.GetLockCommit(lockFile)
 	if err != nil {
-		return fmt.Errorf("could not get the lock commit from lock file", "err", err)
+		return fmt.Errorf("could not get the lock commit from lock file: %v", err)
 	}
 
 	err = os.Remove(lockFile)
 	if err != nil {
-		return fmt.Errorf("could not release lock file", err)
+		return fmt.Errorf("could not release lock file: %v", err)
 	}
 
 	s.logger.Info("released lock file", "previus", lockCommit)

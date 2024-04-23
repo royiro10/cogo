@@ -1,4 +1,4 @@
-package services
+package server
 
 import (
 	"bufio"
@@ -6,7 +6,9 @@ import (
 	"encoding/json"
 	"net"
 
-	"github.com/royiro10/cogo/util"
+	"github.com/royiro10/cogo/common"
+	"github.com/royiro10/cogo/ipc"
+	"github.com/royiro10/cogo/services"
 )
 
 type Daemon interface {
@@ -14,11 +16,11 @@ type Daemon interface {
 }
 
 type CogoDaemon struct {
-	logger         *util.Logger
-	commandService *CommandService
+	logger         *common.Logger
+	commandService *services.CommandService
 }
 
-func CreateCogoDaemon(logger *util.Logger, commandService *CommandService) Daemon {
+func CreateCogoDaemon(logger *common.Logger, commandService *services.CommandService) Daemon {
 	d := &CogoDaemon{
 		logger:         logger,
 		commandService: commandService,
@@ -31,15 +33,14 @@ func (daemon *CogoDaemon) Start(ctx context.Context) {
 	logger := daemon.logger
 
 	logger.Info("Daemon is running...")
-	listener, closeFunc := util.MakeIpcListener(logger)
-	defer closeFunc()
-
-	if listener == nil {
+	server, err := ipc.MakeIpcServer(logger)
+	if err != nil {
 		logger.Error("can not start listening to message")
 		return
 	}
+	defer server.ReleaseFunc()
 
-	logger.Debug("started socket server for IPC", "addr", listener.Addr().String())
+	logger.Debug("started socket server for IPC", "addr", server.Listener.Addr().String())
 
 	for {
 		select {
@@ -48,7 +49,7 @@ func (daemon *CogoDaemon) Start(ctx context.Context) {
 			return
 		default:
 			logger.Debug("accepting connections")
-			conn, err := listener.Accept()
+			conn, err := server.Listener.Accept()
 			if err != nil {
 				daemon.logger.Error("Error accepting connection", "error", err)
 			}
@@ -68,13 +69,13 @@ func (daemon *CogoDaemon) handleMessage(conn net.Conn) {
 		return
 	}
 
-	logger.Info("Background process received message", "message", rawMessage)
-
-	var message CommandParameters
+	var message services.CommandParameters
 	if err := json.Unmarshal(rawMessage, &message); err != nil {
 		logger.Error("Error parsing message", "err", err)
 		return
 	}
+
+	logger.Info("Background process received message", "message", message)
 
 	daemon.commandService.HandleCommand(&message)
 }

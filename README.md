@@ -70,7 +70,7 @@ Contributions are what make the open-source community such an amazing place to l
 
 1. Fork the Project
 2. Create your Feature Branch (`git checkout -b feat/amazing-feature`)
-5. Open a Pull Request
+3. Open a Pull Request
 
 License
 -------
