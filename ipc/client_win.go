@@ -1,12 +1,14 @@
 //go:build windows
 
-package util
+package ipc
 
 import (
 	"net"
+
+	"github.com/royiro10/cogo/common"
 )
 
-func MakeIpcClient(logger *Logger) (*IpcClient, error) {
+func MakeIpcClient(logger *common.Logger) (*IpcClient, error) {
 	conn, err := net.Dial("tcp", COGO_CONN_WIN32)
 	if err != nil {
 		logger.Error("Failed to connect to background process", "err", err, "addr", COGO_CONN_WIN32)

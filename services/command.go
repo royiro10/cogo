@@ -7,10 +7,11 @@ import (
 	"os/exec"
 	"strings"
 
-	"github.com/royiro10/cogo/util"
+	"github.com/royiro10/cogo/common"
 )
 
 type CommandParameters struct {
+	Version   int
 	SessionId string
 	Command   string
 }
@@ -18,11 +19,11 @@ type CommandParameters struct {
 const DefaultSessionKey = "_"
 
 type CommandService struct {
-	logger   *util.Logger
+	logger   *common.Logger
 	sessions map[string]*Session
 }
 
-func CreateCommandService(logger *util.Logger) *CommandService {
+func CreateCommandService(logger *common.Logger) *CommandService {
 	service := &CommandService{
 		logger:   logger,
 		sessions: make(map[string]*Session),
@@ -73,11 +74,11 @@ type Session struct {
 	runningCommand *exec.Cmd
 	commandQueue   []*exec.Cmd
 
-	logger        *util.Logger
+	logger        *common.Logger
 	cancelLogging context.CancelFunc
 }
 
-func NewSession(sessionId string, logger *util.Logger) *Session {
+func NewSession(sessionId string, logger *common.Logger) *Session {
 	s := &Session{
 		ID:           sessionId,
 		commandQueue: make([]*exec.Cmd, 0),
@@ -118,8 +119,7 @@ func (s *Session) Start() {
 
 		if err := s.executeCommand(s.runningCommand); err != nil {
 			// TODO: should I handle this???
-			s.logger.Error(err.Error(), cmd.String())
-			panic(err)
+			s.logger.Fatal(common.WrapedError{Msg: cmd.String(), Err: err})
 		}
 
 		s.runningCommand = nil
@@ -165,7 +165,7 @@ func readPipe(pipe io.ReadCloser, output chan<- string) {
 	pipe.Close()
 }
 
-func (s *Session) startStdPipesLogging(logger *util.Logger, ctx context.Context) {
+func (s *Session) startStdPipesLogging(logger *common.Logger, ctx context.Context) {
 	go func() {
 		for {
 			select {

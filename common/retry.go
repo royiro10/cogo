@@ -1,4 +1,4 @@
-package util
+package common
 
 func MakeRetryable[T any](fn func() (T, error), retryCount int) func() (T, error) {
 	return func() (T, error) {

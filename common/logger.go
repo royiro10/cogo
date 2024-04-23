@@ -1,4 +1,4 @@
-package util
+package common
 
 import (
 	"fmt"
@@ -21,7 +21,7 @@ func CreateLogger(logFile string) *Logger {
 			slog.Default(),
 		}
 
-		LogErrorFatal(logger, "could not create log file", err)
+		logger.Fatal(WrapedError{"could not create log file", err})
 		return nil
 	}
 	// TODO: should I really close the logging file?
@@ -37,6 +37,20 @@ func CreateLogger(logFile string) *Logger {
 	}
 }
 
-func LogErrorFatal(l *Logger, msg string, err error) {
-	panic(fmt.Errorf("%s %w", msg, err).Error())
+type WrapedError struct {
+	Msg string
+	Err error
+}
+
+func (l *Logger) Fatal(input interface{}) {
+	switch v := input.(type) {
+	case string:
+		panic(fmt.Errorf(v).Error())
+	case error:
+		panic(v.Error())
+	case WrapedError:
+		panic(fmt.Errorf("%s, err: %s", v.Msg, v.Err.Error()).Error())
+	default:
+		l.Warn("Received an unsupported type: %T\n", v)
+	}
 }
