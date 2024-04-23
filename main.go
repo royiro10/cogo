@@ -1,11 +1,13 @@
 package main
 
 import (
+	"flag"
+	"fmt"
+	"os"
+
 	"github.com/royiro10/cogo/services"
 	"github.com/royiro10/cogo/util"
 )
-
-var logger = util.DefaultLogger
 
 type CommandArgs string
 
@@ -15,6 +17,16 @@ const (
 )
 
 func main() {
+	isLogging := flag.Bool("logger", false, "shold log")
+
+	flag.Parse()
+	args := flag.Args()
+
+	var logger = util.EmptyLogger
+	if *isLogging {
+		logger = util.CreateLogger(fmt.Sprintf("./logs/cogo_%d.log", os.Getpid()))
+	}
+
 	commandService := services.CreateCommandService(logger)
 	lockService := services.CreateLockFileService(logger)
 	daemon := services.CreateCogoDaemon(logger, commandService)
@@ -25,5 +37,5 @@ func main() {
 		CogoDaemon:  daemon,
 	})
 
-	cli.Handle()
+	cli.Handle(args)
 }

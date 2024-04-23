@@ -7,7 +7,8 @@ import (
 	"os"
 )
 
-var DefaultLogger = CreateLogger(fmt.Sprintf("./logs/cogo_%d.log", os.Getpid()))
+// var DefaultLogger = CreateLogger(fmt.Sprintf("./logs/cogo_%d.log", os.Getpid()))
+var EmptyLogger = &Logger{slog.New(slog.NewJSONHandler(io.Discard, nil))}
 
 type Logger struct {
 	*slog.Logger

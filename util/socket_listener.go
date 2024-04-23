@@ -9,7 +9,7 @@ import (
 
 const COGO_CONN_UINX = "./cogo.sock"
 
-func MakeListener(logger *util.Logger) (net.Listener, IDisposable) {
+func MakeIpcListener(logger *Logger) (net.Listener, IDisposable) {
 	listener, err := net.Listen("unix", COGO_CONN_UINX)
 	if err != nil {
 		logger.Error("Failed to create Unix domain socket listener:", err)

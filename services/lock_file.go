@@ -17,13 +17,8 @@ type LockFileService struct {
 }
 
 func CreateLockFileService(logger *util.Logger) LockService {
-	l := logger
-	if l == nil {
-		l = util.DefaultLogger
-	}
-
 	service := &LockFileService{
-		logger:    l,
+		logger:    logger,
 		isAquired: false,
 	}
 

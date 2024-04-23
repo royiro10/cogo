@@ -1,4 +1,4 @@
-//go:build windows
+//go:build linux || freebsd || darwin
 
 package util
 
@@ -7,9 +7,9 @@ import (
 )
 
 func MakeIpcClient(logger *Logger) (*IpcClient, error) {
-	conn, err := net.Dial("tcp", COGO_CONN_WIN32)
+	conn, err := net.Dial("unix", COGO_CONN_UINX)
 	if err != nil {
-		logger.Error("Failed to connect to background process", "err", err, "addr", COGO_CONN_WIN32)
+		logger.Error("Failed to connect to background process", "err", err, "addr", COGO_CONN_UINX)
 		return nil, err
 	}
 
