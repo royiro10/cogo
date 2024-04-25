@@ -6,7 +6,7 @@ import (
 
 	"github.com/royiro10/cogo/common"
 	"github.com/royiro10/cogo/ipc"
-	"github.com/royiro10/cogo/services"
+	"github.com/royiro10/cogo/models"
 )
 
 type CogoClient struct {
@@ -15,7 +15,7 @@ type CogoClient struct {
 }
 
 func CreateCogoClient(logger *common.Logger) *CogoClient {
-	makeIpcClient := common.MakeRetryable[*ipc.IpcClient](func() (*ipc.IpcClient, error) {
+	makeIpcClient := common.MakeRetryable(func() (*ipc.IpcClient, error) {
 		return ipc.MakeIpcClient(logger)
 	}, 3)
 
@@ -32,15 +32,24 @@ func CreateCogoClient(logger *common.Logger) *CogoClient {
 	return cogoClient
 }
 
-func (client *CogoClient) Run(cp *services.CommandParameters) {
-	msg, err := json.Marshal(cp)
+func (client *CogoClient) sendData(request interface{}) {
+	msg, err := json.Marshal(request)
 	if err != nil {
-		client.logger.Error("failed to serilize command request", "err", err)
+		client.logger.Error("failed to serilize request", "err", err)
 		return
 	}
 
 	fmt.Fprintln(client.ipcClient.Conn, string(msg))
-	client.logger.Debug("send command", "command", msg)
+}
+
+func (client *CogoClient) Run(request *models.ExecuteRequest) {
+	client.logger.Debug("send run command", "request", request)
+	client.sendData(request)
+}
+
+func (client *CogoClient) Kill(request *models.KillRequest) {
+	client.logger.Debug("send kill command", "request", request)
+	client.sendData(request)
 }
 
 func (client *CogoClient) Close() {

@@ -8,13 +8,22 @@ import (
 	"strings"
 
 	"github.com/royiro10/cogo/common"
+	"github.com/royiro10/cogo/models"
 )
 
-type CommandParameters struct {
-	Version   int
-	SessionId string
-	Command   string
-}
+type CommandType int
+
+const (
+	Execute CommandType = iota + 1
+	Kill
+)
+
+// type CommandParameters struct {
+// 	Version   int
+// 	Type      CommandType
+// 	SessionId string
+// 	Command   string
+// }
 
 const DefaultSessionKey = "_"
 
@@ -34,16 +43,18 @@ func CreateCommandService(logger *common.Logger) *CommandService {
 	return service
 }
 
-func (s *CommandService) HandleCommand(cp *CommandParameters) {
-	s.logger.Info("handle command", "sessionId", cp.SessionId, "command", cp.Command)
+func (s *CommandService) HandleCommand(request *models.ExecuteRequest) {
+	s.logger.Info("handle command", "sessionId", request.SessionId, "command", request.Command)
 
-	session, ok := s.sessions[cp.SessionId]
-	if ok {
-		s.logger.Debug("valid session Id not provided. using default", "sessionId", cp.SessionId)
-		session = s.sessions[DefaultSessionKey]
+	session, ok := s.sessions[request.SessionId]
+	if !ok {
+		session = NewSession(request.SessionId, s.logger)
+		s.sessions[request.SessionId] = session
+
+		s.logger.Debug("valid session Id not provided. created new session", "sessionId", request.SessionId)
 	}
 
-	args := strings.Fields(cp.Command)
+	args := strings.Fields(request.Command)
 
 	curser := 0
 	for i := 0; i < len(args); i++ {
@@ -58,6 +69,18 @@ func (s *CommandService) HandleCommand(cp *CommandParameters) {
 		cmd := exec.Command(args[curser], args[curser+1:]...)
 		go session.Run(cmd)
 	}
+}
+
+func (s *CommandService) HandleKill(request *models.KillRequest) {
+	s.logger.Info("handle kill", "sessionId", request.SessionId)
+
+	session, ok := s.sessions[request.SessionId]
+	if !ok {
+		s.logger.Warn("no session matching requested session", session, request.SessionId)
+		return
+	}
+
+	session.Kill()
 }
 
 type Session struct {
@@ -107,6 +130,12 @@ func (s *Session) Run(cmd *exec.Cmd) {
 	s.Start()
 }
 
+func (s *Session) Kill() {
+	s.Stop()
+	s.cancelLogging()
+	s.logger.Info("killed session", "sessionId", s.ID)
+}
+
 func (s *Session) Start() {
 	if s.runningCommand != nil {
 		return
@@ -123,6 +152,15 @@ func (s *Session) Start() {
 		}
 
 		s.runningCommand = nil
+	}
+}
+
+func (s *Session) Stop() {
+	s.commandQueue = make([]*exec.Cmd, 0)
+
+	if err := s.runningCommand.Cancel(); err != nil {
+		s.logger.Warn("error while canceling command", "err", err)
+		return
 	}
 }
 

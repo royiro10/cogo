@@ -14,13 +14,11 @@ import (
 type CommandArgs string
 
 func main() {
-	isLogging := flag.Bool("logger", false, "shold log")
-
-	flag.Parse()
+	flags := cmd.InitFlags()
 	args := flag.Args()
 
 	var logger = common.EmptyLogger
-	if *isLogging {
+	if flags.IsLogging {
 		logger = common.CreateLogger(fmt.Sprintf("./logs/cogo_%d.log", os.Getpid()))
 	}
 
@@ -34,5 +32,5 @@ func main() {
 		CogoDaemon:  daemon,
 	})
 
-	cli.Handle(args)
+	cli.Handle(args, flags)
 }

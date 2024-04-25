@@ -8,6 +8,7 @@ import (
 
 	"github.com/royiro10/cogo/common"
 	"github.com/royiro10/cogo/ipc"
+	"github.com/royiro10/cogo/models"
 	"github.com/royiro10/cogo/services"
 )
 
@@ -69,13 +70,31 @@ func (daemon *CogoDaemon) handleMessage(conn net.Conn) {
 		return
 	}
 
-	var message services.CommandParameters
-	if err := json.Unmarshal(rawMessage, &message); err != nil {
-		logger.Error("Error parsing message", "err", err)
+	var data struct {
+		Details models.CogoMessageDetails
+	}
+
+	if err := json.Unmarshal(rawMessage, &data); err != nil {
+		logger.Error("Error reading message", "err", err)
 		return
 	}
 
-	logger.Info("Background process received message", "message", message)
+	logger.Info("hi", data.Details.Type, "data", rawMessage)
+	request := models.GetRequest(data.Details.Type)
+	if err := json.Unmarshal(rawMessage, request); err != nil {
+		logger.Error("Error reading message", "err", err)
+		return
+	}
 
-	daemon.commandService.HandleCommand(&message)
+	logger.Info("Background process received message", "request", request)
+	switch req := request.(type) {
+	case *models.ExecuteRequest:
+		daemon.commandService.HandleCommand(req)
+		return
+	case *models.KillRequest:
+		daemon.commandService.HandleKill(req)
+		return
+	default:
+		logger.Error("unkown request type", "request", request, "type", req)
+	}
 }
