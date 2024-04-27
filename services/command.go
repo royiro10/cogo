@@ -66,7 +66,7 @@ func (s *CommandService) HandleKill(request *models.KillRequest) {
 
 	session, ok := s.sessions[request.SessionId]
 	if !ok {
-		s.logger.Warn("no session matching requested session", session, request.SessionId)
+		s.logger.Warn("no session matching requested session", "session", request.SessionId)
 		return
 	}
 
