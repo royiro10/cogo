@@ -8,13 +8,8 @@ import (
 	"strings"
 
 	"github.com/royiro10/cogo/common"
+	"github.com/royiro10/cogo/models"
 )
-
-type CommandParameters struct {
-	Version   int
-	SessionId string
-	Command   string
-}
 
 const DefaultSessionKey = "_"
 
@@ -34,30 +29,48 @@ func CreateCommandService(logger *common.Logger) *CommandService {
 	return service
 }
 
-func (s *CommandService) HandleCommand(cp *CommandParameters) {
-	s.logger.Info("handle command", "sessionId", cp.SessionId, "command", cp.Command)
+func (s *CommandService) HandleCommand(request *models.ExecuteRequest) {
+	s.logger.Info("handle command", "sessionId", request.SessionId, "command", request.Command)
 
-	session, ok := s.sessions[cp.SessionId]
-	if ok {
-		s.logger.Debug("valid session Id not provided. using default", "sessionId", cp.SessionId)
-		session = s.sessions[DefaultSessionKey]
+	session, ok := s.sessions[request.SessionId]
+	if !ok {
+		session = NewSession(request.SessionId, s.logger)
+		s.sessions[request.SessionId] = session
+
+		s.logger.Debug("valid session Id not provided. created new session", "sessionId", request.SessionId)
 	}
 
-	args := strings.Fields(cp.Command)
+	args := strings.Fields(request.Command)
+
+	commands := make([]*exec.Cmd, 0)
 
 	curser := 0
 	for i := 0; i < len(args); i++ {
 		if args[i] == "&&" {
-			cmd := exec.Command(args[curser], args[curser+1:i]...)
-			go session.Run(cmd)
+			commands = append(commands, exec.Command(args[curser], args[curser+1:i]...))
 			curser = i + 1
 		}
 	}
 
 	if curser != len(args) {
-		cmd := exec.Command(args[curser], args[curser+1:]...)
+		commands = append(commands, exec.Command(args[curser], args[curser+1:]...))
+	}
+
+	for _, cmd := range commands {
 		go session.Run(cmd)
 	}
+}
+
+func (s *CommandService) HandleKill(request *models.KillRequest) {
+	s.logger.Info("handle kill", "sessionId", request.SessionId)
+
+	session, ok := s.sessions[request.SessionId]
+	if !ok {
+		s.logger.Warn("no session matching requested session", session, request.SessionId)
+		return
+	}
+
+	session.Kill()
 }
 
 type Session struct {
@@ -73,6 +86,7 @@ type Session struct {
 
 	runningCommand *exec.Cmd
 	commandQueue   []*exec.Cmd
+	killChan       chan struct{}
 
 	logger        *common.Logger
 	cancelLogging context.CancelFunc
@@ -86,6 +100,8 @@ func NewSession(sessionId string, logger *common.Logger) *Session {
 		stdoutChan: make(chan string),
 		stderrChan: make(chan string),
 		stdinChan:  make(chan string),
+
+		killChan: make(chan struct{}),
 
 		logger: logger,
 	}
@@ -101,12 +117,19 @@ func NewSession(sessionId string, logger *common.Logger) *Session {
 	return s
 }
 
-// TODO.com : this is not thread safe. make it use sync.mu
+// TODO : this is not thread safe. make it use sync.mu
 func (s *Session) Run(cmd *exec.Cmd) {
 	s.commandQueue = append(s.commandQueue, cmd)
 	s.Start()
 }
 
+func (s *Session) Kill() {
+	s.Stop()
+	s.cancelLogging()
+	s.logger.Info("killed session", "sessionId", s.ID)
+}
+
+// TODO : this is not thread safe. make it use sync.mu
 func (s *Session) Start() {
 	if s.runningCommand != nil {
 		return
@@ -117,12 +140,28 @@ func (s *Session) Start() {
 		s.commandQueue = s.commandQueue[1:]
 		s.runningCommand = cmd
 
-		if err := s.executeCommand(s.runningCommand); err != nil {
-			// TODO: should I handle this???
-			s.logger.Fatal(common.WrapedError{Msg: cmd.String(), Err: err})
+		// TODO: should I handle this???
+		err := s.executeCommand(s.runningCommand)
+		if err != nil {
+			select {
+			case <-s.killChan:
+
+			default:
+				s.logger.Fatal(common.WrapedError{Msg: cmd.String(), Err: err})
+			}
 		}
 
 		s.runningCommand = nil
+	}
+}
+
+func (s *Session) Stop() {
+	s.commandQueue = make([]*exec.Cmd, 0)
+
+	s.killChan <- struct{}{}
+	if err := s.runningCommand.Process.Kill(); err != nil {
+		s.logger.Warn("error while canceling command", "err", err)
+		return
 	}
 }
 

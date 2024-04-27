@@ -8,10 +8,11 @@ import (
 )
 
 // var DefaultLogger = CreateLogger(fmt.Sprintf("./logs/cogo_%d.log", os.Getpid()))
-var EmptyLogger = &Logger{slog.New(slog.NewJSONHandler(io.Discard, nil))}
+var EmptyLogger = &Logger{slog.New(slog.NewJSONHandler(io.Discard, nil)), nil}
 
 type Logger struct {
 	*slog.Logger
+	LogFile *os.File
 }
 
 func CreateLogger(logFile string) *Logger {
@@ -19,6 +20,7 @@ func CreateLogger(logFile string) *Logger {
 	if err != nil {
 		logger := &Logger{
 			slog.Default(),
+			nil,
 		}
 
 		logger.Fatal(WrapedError{"could not create log file", err})
@@ -34,6 +36,7 @@ func CreateLogger(logFile string) *Logger {
 	})
 	return &Logger{
 		slog.New(handler),
+		f,
 	}
 }
 
@@ -43,14 +46,18 @@ type WrapedError struct {
 }
 
 func (l *Logger) Fatal(input interface{}) {
+	var err error
 	switch v := input.(type) {
 	case string:
-		panic(fmt.Errorf(v).Error())
+		err = fmt.Errorf(v)
 	case error:
-		panic(v.Error())
+		err = v
 	case WrapedError:
-		panic(fmt.Errorf("%s, err: %s", v.Msg, v.Err.Error()).Error())
+		err = fmt.Errorf("%s, err: %s", v.Msg, v.Err.Error())
 	default:
 		l.Warn("Received an unsupported type: %T\n", v)
 	}
+
+	l.Error(err.Error())
+	panic(err)
 }

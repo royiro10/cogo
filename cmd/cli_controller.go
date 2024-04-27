@@ -15,6 +15,7 @@ const (
 	START_DAEMON = "start"
 	STOP_DAEMON  = "stop"
 	RUN_COMMAND  = "run"
+	KILL_COMMAND = "kill"
 	UNKOWN       = "unkown"
 )
 
@@ -35,6 +36,7 @@ func CreateCLI(deps CogoCLIDeps) *CogoCLI {
 		START_DAEMON: makeHandleStartDaemon(deps.LockService, deps.Logger),
 		STOP_DAEMON:  makeHandleStopDaemon(deps.LockService, deps.Logger),
 		RUN_COMMAND:  makeRunCommand(deps.LockService, deps.Logger),
+		KILL_COMMAND: makeKillCommand(deps.LockService, deps.Logger),
 	}
 
 	service := &CogoCLI{
@@ -45,7 +47,7 @@ func CreateCLI(deps CogoCLIDeps) *CogoCLI {
 	return service
 }
 
-func (cli *CogoCLI) Handle(args []string) {
+func (cli *CogoCLI) Handle(args []string, flags *models.CogoCLIFlags) {
 	if len(args) < 1 {
 		cli.UsageMsg()
 		return
@@ -54,6 +56,7 @@ func (cli *CogoCLI) Handle(args []string) {
 	cmdInfo := models.CogoCLIInfo{
 		Commad: args[0],
 		Args:   args[1:],
+		Flags:  flags,
 	}
 
 	if command := cli.commands[cmdInfo.Commad]; command != nil {

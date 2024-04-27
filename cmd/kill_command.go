@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"fmt"
-	"strings"
 
 	"github.com/royiro10/cogo/client"
 	"github.com/royiro10/cogo/common"
@@ -10,10 +9,9 @@ import (
 	"github.com/royiro10/cogo/services"
 )
 
-func makeRunCommand(lockService common.LockService, logger *common.Logger) models.CogoCLICommand {
+func makeKillCommand(lockService common.LockService, logger *common.Logger) models.CogoCLICommand {
 	return func(cmdInfo models.CogoCLIInfo) error {
 		if !lockService.IsAcquired(LOCK_FILE) {
-			// TODO: automaticcly start daemon
 			return fmt.Errorf("cogo must be start before running commands")
 		}
 
@@ -25,7 +23,7 @@ func makeRunCommand(lockService common.LockService, logger *common.Logger) model
 			session = services.DefaultSessionKey
 		}
 
-		client.Run(models.NewExecuteRequest(session, strings.Join(cmdInfo.Args[:], " ")))
+		client.Kill(models.NewKillRequest(session))
 
 		return nil
 	}
