@@ -11,20 +11,6 @@ import (
 	"github.com/royiro10/cogo/models"
 )
 
-type CommandType int
-
-const (
-	Execute CommandType = iota + 1
-	Kill
-)
-
-// type CommandParameters struct {
-// 	Version   int
-// 	Type      CommandType
-// 	SessionId string
-// 	Command   string
-// }
-
 const DefaultSessionKey = "_"
 
 type CommandService struct {
@@ -56,17 +42,21 @@ func (s *CommandService) HandleCommand(request *models.ExecuteRequest) {
 
 	args := strings.Fields(request.Command)
 
+	commands := make([]*exec.Cmd, 0)
+
 	curser := 0
 	for i := 0; i < len(args); i++ {
 		if args[i] == "&&" {
-			cmd := exec.Command(args[curser], args[curser+1:i]...)
-			go session.Run(cmd)
+			commands = append(commands, exec.Command(args[curser], args[curser+1:i]...))
 			curser = i + 1
 		}
 	}
 
 	if curser != len(args) {
-		cmd := exec.Command(args[curser], args[curser+1:]...)
+		commands = append(commands, exec.Command(args[curser], args[curser+1:]...))
+	}
+
+	for _, cmd := range commands {
 		go session.Run(cmd)
 	}
 }
@@ -96,6 +86,7 @@ type Session struct {
 
 	runningCommand *exec.Cmd
 	commandQueue   []*exec.Cmd
+	killChan       chan struct{}
 
 	logger        *common.Logger
 	cancelLogging context.CancelFunc
@@ -109,6 +100,8 @@ func NewSession(sessionId string, logger *common.Logger) *Session {
 		stdoutChan: make(chan string),
 		stderrChan: make(chan string),
 		stdinChan:  make(chan string),
+
+		killChan: make(chan struct{}),
 
 		logger: logger,
 	}
@@ -124,7 +117,7 @@ func NewSession(sessionId string, logger *common.Logger) *Session {
 	return s
 }
 
-// TODO.com : this is not thread safe. make it use sync.mu
+// TODO : this is not thread safe. make it use sync.mu
 func (s *Session) Run(cmd *exec.Cmd) {
 	s.commandQueue = append(s.commandQueue, cmd)
 	s.Start()
@@ -136,6 +129,7 @@ func (s *Session) Kill() {
 	s.logger.Info("killed session", "sessionId", s.ID)
 }
 
+// TODO : this is not thread safe. make it use sync.mu
 func (s *Session) Start() {
 	if s.runningCommand != nil {
 		return
@@ -146,9 +140,15 @@ func (s *Session) Start() {
 		s.commandQueue = s.commandQueue[1:]
 		s.runningCommand = cmd
 
-		if err := s.executeCommand(s.runningCommand); err != nil {
-			// TODO: should I handle this???
-			s.logger.Fatal(common.WrapedError{Msg: cmd.String(), Err: err})
+		// TODO: should I handle this???
+		err := s.executeCommand(s.runningCommand)
+		if err != nil {
+			select {
+			case <-s.killChan:
+
+			default:
+				s.logger.Fatal(common.WrapedError{Msg: cmd.String(), Err: err})
+			}
 		}
 
 		s.runningCommand = nil
@@ -158,7 +158,8 @@ func (s *Session) Start() {
 func (s *Session) Stop() {
 	s.commandQueue = make([]*exec.Cmd, 0)
 
-	if err := s.runningCommand.Cancel(); err != nil {
+	s.killChan <- struct{}{}
+	if err := s.runningCommand.Process.Kill(); err != nil {
 		s.logger.Warn("error while canceling command", "err", err)
 		return
 	}

@@ -10,6 +10,7 @@ import (
 	"github.com/royiro10/cogo/ipc"
 	"github.com/royiro10/cogo/models"
 	"github.com/royiro10/cogo/services"
+	"github.com/royiro10/cogo/util"
 )
 
 type Daemon interface {
@@ -32,6 +33,8 @@ func CreateCogoDaemon(logger *common.Logger, commandService *services.CommandSer
 
 func (daemon *CogoDaemon) Start(ctx context.Context) {
 	logger := daemon.logger
+
+	util.RedirectStderr(logger.LogFile)
 
 	logger.Info("Daemon is running...")
 	server, err := ipc.MakeIpcServer(logger)
@@ -79,7 +82,6 @@ func (daemon *CogoDaemon) handleMessage(conn net.Conn) {
 		return
 	}
 
-	logger.Info("hi", data.Details.Type, "data", rawMessage)
 	request := models.GetRequest(data.Details.Type)
 	if err := json.Unmarshal(rawMessage, request); err != nil {
 		logger.Error("Error reading message", "err", err)
