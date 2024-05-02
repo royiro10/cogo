@@ -1,9 +1,8 @@
 package server
 
 import (
-	"bufio"
 	"context"
-	"encoding/json"
+	"errors"
 	"net"
 
 	"github.com/royiro10/cogo/common"
@@ -67,36 +66,40 @@ func (daemon *CogoDaemon) handleMessage(conn net.Conn) {
 	logger := daemon.logger
 	defer conn.Close()
 
-	rawMessage, err := bufio.NewReader(conn).ReadBytes('\n')
+	msg, err := ipc.ReciveMsg(conn)
 	if err != nil {
 		logger.Error("Error reading message", "err", err)
 		return
 	}
 
-	var data struct {
-		Details models.CogoMessageDetails
-	}
+	logger.Info("Background process received message", "request", msg)
 
-	if err := json.Unmarshal(rawMessage, &data); err != nil {
-		logger.Error("Error reading message", "err", err)
-		return
-	}
-
-	request := models.GetRequest(data.Details.Type)
-	if err := json.Unmarshal(rawMessage, request); err != nil {
-		logger.Error("Error reading message", "err", err)
-		return
-	}
-
-	logger.Info("Background process received message", "request", request)
-	switch req := request.(type) {
+	switch req := msg.(type) {
 	case *models.ExecuteRequest:
 		daemon.commandService.HandleCommand(req)
+		daemon.Ack(conn)
 		return
 	case *models.KillRequest:
 		daemon.commandService.HandleKill(req)
+		daemon.Ack(conn)
 		return
 	default:
-		logger.Error("unkown request type", "request", request, "type", req)
+		errMsg := "unkown request type"
+		logger.Error(errMsg, "request", msg, "type", req)
+		daemon.Err(conn, errors.New(errMsg))
+	}
+}
+
+func (daemon *CogoDaemon) Ack(conn net.Conn) {
+	daemon.sendResponse(conn, models.NewAckResponse())
+}
+
+func (daemon *CogoDaemon) Err(conn net.Conn, err error) {
+	daemon.sendResponse(conn, models.NewErrResponse(err))
+}
+
+func (daemon *CogoDaemon) sendResponse(conn net.Conn, msg models.CogoMessage) {
+	if err := ipc.SendMsg(conn, msg); err != nil {
+		daemon.logger.Error("failed to send", "msg", msg)
 	}
 }

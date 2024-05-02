@@ -1,7 +1,6 @@
 package client
 
 import (
-	"encoding/json"
 	"fmt"
 
 	"github.com/royiro10/cogo/common"
@@ -32,26 +31,39 @@ func CreateCogoClient(logger *common.Logger) *CogoClient {
 	return cogoClient
 }
 
-func (client *CogoClient) sendData(request interface{}) {
-	msg, err := json.Marshal(request)
-	if err != nil {
-		client.logger.Error("failed to serilize request", "err", err)
-		return
-	}
-
-	fmt.Fprintln(client.ipcClient.Conn, string(msg))
+func (client *CogoClient) Run(request *models.ExecuteRequest) error {
+	client.sendData(request)
+	return client.ensureAck()
 }
 
-func (client *CogoClient) Run(request *models.ExecuteRequest) {
-	client.logger.Debug("send run command", "request", request)
+func (client *CogoClient) Kill(request *models.KillRequest) error {
 	client.sendData(request)
-}
-
-func (client *CogoClient) Kill(request *models.KillRequest) {
-	client.logger.Debug("send kill command", "request", request)
-	client.sendData(request)
+	return client.ensureAck()
 }
 
 func (client *CogoClient) Close() {
 	client.ipcClient.ReleaseFunc()
+}
+
+func (client *CogoClient) sendData(request models.CogoMessage) {
+	client.logger.Debug("send command", "type", request.GetDetails().Type, "request", request)
+
+	if err := ipc.SendMsg(client.ipcClient.Conn, request); err != nil {
+		client.logger.Error("could not send request", "reason", err.Error())
+	}
+}
+
+func (client *CogoClient) ensureAck() error {
+	msg, err := ipc.ReciveMsg(client.ipcClient.Conn)
+	if err != nil {
+		return err
+	}
+
+	client.logger.Debug("recived msg", "msg", msg)
+
+	if msg.GetDetails().Type != models.AckResponseDetails.Type {
+		return fmt.Errorf("unexpected response %v", msg.GetDetails())
+	}
+
+	return nil
 }

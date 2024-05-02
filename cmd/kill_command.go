@@ -23,8 +23,6 @@ func makeKillCommand(lockService common.LockService, logger *common.Logger) mode
 			session = services.DefaultSessionKey
 		}
 
-		client.Kill(models.NewKillRequest(session))
-
-		return nil
+		return client.Kill(models.NewKillRequest(session))
 	}
 }
