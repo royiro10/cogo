@@ -1,52 +1,50 @@
 package models
 
-type RequestType string
+type RequestType MessageType
 
 const (
 	Execute RequestType = "ExecuteRequest"
 	Kill    RequestType = "KillRequest"
 )
 
-var requestTypeMap = map[RequestType]func() interface{}{
-	Execute: func() interface{} { return &ExecuteRequest{Details: ExecuteRequestDetails} },
-	Kill:    func() interface{} { return &KillRequest{Details: KillRequestDetails} },
+var requestTypeMap = map[RequestType]func() CogoMessage{
+	Execute: func() CogoMessage { return &ExecuteRequest{BaseCogoMessage: BaseCogoMessage{ExecuteRequestDetails}} },
+	Kill:    func() CogoMessage { return &KillRequest{BaseCogoMessage: BaseCogoMessage{KillRequestDetails}} },
 }
 
-func GetRequest(requestType RequestType) interface{} {
-	return requestTypeMap[requestType]()
+func GetRequest(requestType MessageType) CogoMessage {
+	if reqBuilder := requestTypeMap[RequestType(requestType)]; reqBuilder != nil {
+		return reqBuilder()
+	}
+	return nil
 }
 
-type CogoMessageDetails struct {
-	Version int
-	Type    RequestType
-}
-
-var ExecuteRequestDetails = CogoMessageDetails{Version: 1, Type: Execute}
+var ExecuteRequestDetails = CogoMessageDetails{Version: 1, Type: MessageType(Execute)}
 
 type ExecuteRequest struct {
-	Details   CogoMessageDetails
+	BaseCogoMessage
 	SessionId string
 	Command   string
 }
 
 func NewExecuteRequest(sessionId string, command string) *ExecuteRequest {
 	return &ExecuteRequest{
-		Details:   ExecuteRequestDetails,
-		SessionId: sessionId,
-		Command:   command,
+		BaseCogoMessage: BaseCogoMessage{ExecuteRequestDetails},
+		SessionId:       sessionId,
+		Command:         command,
 	}
 }
 
-var KillRequestDetails = CogoMessageDetails{Version: 1, Type: Kill}
+var KillRequestDetails = CogoMessageDetails{Version: 1, Type: MessageType(Kill)}
 
 type KillRequest struct {
-	Details   CogoMessageDetails
+	BaseCogoMessage
 	SessionId string
 }
 
 func NewKillRequest(sessionId string) *KillRequest {
 	return &KillRequest{
-		Details:   KillRequestDetails,
-		SessionId: sessionId,
+		BaseCogoMessage: BaseCogoMessage{KillRequestDetails},
+		SessionId:       sessionId,
 	}
 }

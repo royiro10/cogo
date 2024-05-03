@@ -25,8 +25,6 @@ func makeRunCommand(lockService common.LockService, logger *common.Logger) model
 			session = services.DefaultSessionKey
 		}
 
-		client.Run(models.NewExecuteRequest(session, strings.Join(cmdInfo.Args[:], " ")))
-
-		return nil
+		return client.Run(models.NewExecuteRequest(session, strings.Join(cmdInfo.Args[:], " ")))
 	}
 }
