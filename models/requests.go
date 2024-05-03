@@ -3,13 +3,17 @@ package models
 type RequestType MessageType
 
 const (
-	Execute RequestType = "ExecuteRequest"
-	Kill    RequestType = "KillRequest"
+	ExecuteReq RequestType = "ExecuteRequest"
+	KillReq    RequestType = "KillRequest"
+	OutputReq  RequestType = "OutputRequest"
 )
 
-var requestTypeMap = map[RequestType]func() CogoMessage{
-	Execute: func() CogoMessage { return &ExecuteRequest{BaseCogoMessage: BaseCogoMessage{ExecuteRequestDetails}} },
-	Kill:    func() CogoMessage { return &KillRequest{BaseCogoMessage: BaseCogoMessage{KillRequestDetails}} },
+type RequestBuilder func() CogoMessage
+
+var requestTypeMap = map[RequestType]RequestBuilder{
+	ExecuteReq: func() CogoMessage { return &ExecuteRequest{BaseCogoMessage: BaseCogoMessage{ExecuteRequestDetails}} },
+	KillReq:    func() CogoMessage { return &KillRequest{BaseCogoMessage: BaseCogoMessage{KillRequestDetails}} },
+	OutputReq:  func() CogoMessage { return &OutputRequest{BaseCogoMessage: BaseCogoMessage{OutputRequestDetails}} },
 }
 
 func GetRequest(requestType MessageType) CogoMessage {
@@ -19,7 +23,7 @@ func GetRequest(requestType MessageType) CogoMessage {
 	return nil
 }
 
-var ExecuteRequestDetails = CogoMessageDetails{Version: 1, Type: MessageType(Execute)}
+var ExecuteRequestDetails = CogoMessageDetails{Version: 1, Type: MessageType(ExecuteReq)}
 
 type ExecuteRequest struct {
 	BaseCogoMessage
@@ -35,7 +39,7 @@ func NewExecuteRequest(sessionId string, command string) *ExecuteRequest {
 	}
 }
 
-var KillRequestDetails = CogoMessageDetails{Version: 1, Type: MessageType(Kill)}
+var KillRequestDetails = CogoMessageDetails{Version: 1, Type: MessageType(KillReq)}
 
 type KillRequest struct {
 	BaseCogoMessage
@@ -45,6 +49,20 @@ type KillRequest struct {
 func NewKillRequest(sessionId string) *KillRequest {
 	return &KillRequest{
 		BaseCogoMessage: BaseCogoMessage{KillRequestDetails},
+		SessionId:       sessionId,
+	}
+}
+
+var OutputRequestDetails = CogoMessageDetails{Version: 1, Type: MessageType(OutputReq)}
+
+type OutputRequest struct {
+	BaseCogoMessage
+	SessionId string
+}
+
+func NewOutputRequest(sessionId string) *OutputRequest {
+	return &OutputRequest{
+		BaseCogoMessage: BaseCogoMessage{OutputRequestDetails},
 		SessionId:       sessionId,
 	}
 }

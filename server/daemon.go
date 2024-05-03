@@ -83,6 +83,9 @@ func (daemon *CogoDaemon) handleMessage(conn net.Conn) {
 		daemon.commandService.HandleKill(req)
 		daemon.Ack(conn)
 		return
+	case *models.OutputRequest:
+		output := daemon.commandService.HandleOutput(req)
+		daemon.Output(conn, output)
 	default:
 		errMsg := "unkown request type"
 		logger.Error(errMsg, "request", msg, "type", req)
@@ -96,6 +99,10 @@ func (daemon *CogoDaemon) Ack(conn net.Conn) {
 
 func (daemon *CogoDaemon) Err(conn net.Conn, err error) {
 	daemon.sendResponse(conn, models.NewErrResponse(err))
+}
+
+func (daemon *CogoDaemon) Output(conn net.Conn, output *[]models.StdLine) {
+	daemon.sendResponse(conn, models.NewOutputResponse(output))
 }
 
 func (daemon *CogoDaemon) sendResponse(conn net.Conn, msg models.CogoMessage) {

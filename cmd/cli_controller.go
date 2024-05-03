@@ -11,12 +11,13 @@ import (
 
 const LOCK_FILE = "./cogo.lock"
 const (
-	RUN_DAEMON   = "daemon"
-	START_DAEMON = "start"
-	STOP_DAEMON  = "stop"
-	RUN_COMMAND  = "run"
-	KILL_COMMAND = "kill"
-	UNKOWN       = "unkown"
+	RUN_DAEMON     = "daemon"
+	START_DAEMON   = "start"
+	STOP_DAEMON    = "stop"
+	RUN_COMMAND    = "run"
+	KILL_COMMAND   = "kill"
+	OUTPUT_COMMAND = "output"
+	UNKOWN         = "unkown"
 )
 
 type CogoCLIDeps struct {
@@ -32,11 +33,12 @@ type CogoCLI struct {
 
 func CreateCLI(deps CogoCLIDeps) *CogoCLI {
 	commands := map[string]models.CogoCLICommand{
-		RUN_DAEMON:   makeHandleRunAsDaemon(deps.LockService, deps.Logger, deps.CogoDaemon),
-		START_DAEMON: makeHandleStartDaemon(deps.LockService, deps.Logger),
-		STOP_DAEMON:  makeHandleStopDaemon(deps.LockService, deps.Logger),
-		RUN_COMMAND:  makeRunCommand(deps.LockService, deps.Logger),
-		KILL_COMMAND: makeKillCommand(deps.LockService, deps.Logger),
+		RUN_DAEMON:     makeHandleRunAsDaemon(deps.LockService, deps.Logger, deps.CogoDaemon),
+		START_DAEMON:   makeHandleStartDaemon(deps.LockService, deps.Logger),
+		STOP_DAEMON:    makeHandleStopDaemon(deps.LockService, deps.Logger),
+		RUN_COMMAND:    makeRunCommand(deps.LockService, deps.Logger),
+		KILL_COMMAND:   makeKillCommand(deps.LockService, deps.Logger),
+		OUTPUT_COMMAND: makeOutputCommand(deps.LockService, deps.Logger),
 	}
 
 	service := &CogoCLI{

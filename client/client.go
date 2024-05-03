@@ -41,6 +41,29 @@ func (client *CogoClient) Kill(request *models.KillRequest) error {
 	return client.ensureAck()
 }
 
+func (client *CogoClient) Output(request *models.OutputRequest) error {
+	client.sendData(request)
+
+	msg, err := ipc.ReciveMsg(client.ipcClient.Conn)
+	if err != nil {
+		return err
+	}
+
+	switch response := msg.(type) {
+	case *models.OutputResponse:
+		fmt.Println(fmt.Sprintf("output for session: %s", request.SessionId))
+
+		for _, line := range response.Lines {
+			fmt.Println(line.Data)
+		}
+
+	default:
+		client.logger.Error("unkown response type", "response", response)
+	}
+
+	return nil
+}
+
 func (client *CogoClient) Close() {
 	client.ipcClient.ReleaseFunc()
 }
