@@ -6,6 +6,8 @@ import (
 	"io"
 	"os/exec"
 	"strings"
+	"sync"
+	"time"
 
 	"github.com/royiro10/cogo/common"
 	"github.com/royiro10/cogo/models"
@@ -57,8 +59,9 @@ func (s *CommandService) HandleCommand(request *models.ExecuteRequest) {
 	}
 
 	for _, cmd := range commands {
-		go session.Run(cmd)
+		session.Run(cmd)
 	}
+
 }
 
 func (s *CommandService) HandleKill(request *models.KillRequest) {
@@ -73,20 +76,35 @@ func (s *CommandService) HandleKill(request *models.KillRequest) {
 	session.Kill()
 }
 
+func (s *CommandService) HandleOutput(request *models.OutputRequest) *[]models.StdLine {
+	s.logger.Info("handle output", "sessionId", request.SessionId)
+
+	session, ok := s.sessions[request.SessionId]
+	if !ok {
+		session = NewSession(request.SessionId, s.logger)
+		s.sessions[request.SessionId] = session
+
+		s.logger.Debug("valid session Id not provided. created new session", "sessionId", request.SessionId)
+	}
+
+	output := session.GetOutput(-1)
+	s.logger.Info("output", "view", output)
+	return output
+}
+
 type Session struct {
-	ID string
+	ID       string
+	ExecChan chan *exec.Cmd
 
-	stdoutView *bufio.Reader
-	stderrView *bufio.Reader
-	stdinView  *bufio.Reader
-
-	stdoutChan chan string
-	stderrChan chan string
-	stdinChan  chan string
-
+	queueMu        sync.Mutex
+	executionMu    sync.Mutex
 	runningCommand *exec.Cmd
 	commandQueue   []*exec.Cmd
 	killChan       chan struct{}
+
+	stdoutContainer *StdContainer
+	stderrContainer *StdContainer
+	stdinContainer  *StdContainer
 
 	logger        *common.Logger
 	cancelLogging context.CancelFunc
@@ -94,14 +112,15 @@ type Session struct {
 
 func NewSession(sessionId string, logger *common.Logger) *Session {
 	s := &Session{
-		ID:           sessionId,
+		ID:       sessionId,
+		ExecChan: make(chan *exec.Cmd),
+
 		commandQueue: make([]*exec.Cmd, 0),
+		killChan:     make(chan struct{}),
 
-		stdoutChan: make(chan string),
-		stderrChan: make(chan string),
-		stdinChan:  make(chan string),
-
-		killChan: make(chan struct{}),
+		stdoutContainer: NewStdContainer("STDOUT"),
+		stderrContainer: NewStdContainer("STDERR"),
+		stdinContainer:  NewStdContainer("STDIN"),
 
 		logger: logger,
 	}
@@ -109,18 +128,27 @@ func NewSession(sessionId string, logger *common.Logger) *Session {
 	ctx, cancel := context.WithCancel(context.Background())
 	s.cancelLogging = cancel
 
+	s.stdoutContainer.Init(ctx)
+	s.stderrContainer.Init(ctx)
+	s.stdinContainer.Init(ctx)
+
 	if logger != nil {
-		s.startStdPipesLogging(logger, ctx)
+		s.stdoutContainer.AddListener(makePipeLogger(s.stdoutContainer, logger))
+		s.stderrContainer.AddListener(makePipeLogger(s.stderrContainer, logger))
+		s.stdinContainer.AddListener(makePipeLogger(s.stdinContainer, logger))
+
 		logger.Debug("registered pipe logging")
 	}
 
 	return s
 }
 
-// TODO : this is not thread safe. make it use sync.mu
 func (s *Session) Run(cmd *exec.Cmd) {
+	s.queueMu.Lock()
+	defer s.queueMu.Unlock()
+
 	s.commandQueue = append(s.commandQueue, cmd)
-	s.Start()
+	go s.Start()
 }
 
 func (s *Session) Kill() {
@@ -129,25 +157,39 @@ func (s *Session) Kill() {
 	s.logger.Info("killed session", "sessionId", s.ID)
 }
 
-// TODO : this is not thread safe. make it use sync.mu
-func (s *Session) Start() {
-	if s.runningCommand != nil {
-		return
+func (s *Session) GetOutput(tailCount int) *[]models.StdLine {
+	if tailCount == -1 {
+		output := s.stdoutContainer.View()
+		return &output
 	}
 
+	output := s.stdoutContainer.ViewTail(tailCount)
+	return &output
+}
+
+func (s *Session) Start() {
+	if !s.executionMu.TryLock() {
+		return
+	}
+	defer s.executionMu.Unlock()
+
 	for len(s.commandQueue) > 0 {
+		s.queueMu.Lock()
 		cmd := s.commandQueue[0]
 		s.commandQueue = s.commandQueue[1:]
 		s.runningCommand = cmd
+		s.queueMu.Unlock()
 
-		// TODO: should I handle this???
 		err := s.executeCommand(s.runningCommand)
 		if err != nil {
 			select {
 			case <-s.killChan:
 
 			default:
-				s.logger.Fatal(common.WrapedError{Msg: cmd.String(), Err: err})
+				s.stderrContainer.NotifyChan <- models.StdLine{
+					Time: time.Now(),
+					Data: err.Error(),
+				}
 			}
 		}
 
@@ -158,17 +200,14 @@ func (s *Session) Start() {
 func (s *Session) Stop() {
 	s.commandQueue = make([]*exec.Cmd, 0)
 
-	s.killChan <- struct{}{}
+	go func() {
+		s.killChan <- struct{}{}
+	}()
+
 	if err := s.runningCommand.Process.Kill(); err != nil {
 		s.logger.Warn("error while canceling command", "err", err)
 		return
 	}
-}
-
-type ReplacePipeParameters struct {
-	Stdout *bufio.Reader
-	Stderr *bufio.Reader
-	Stdin  *bufio.Reader
 }
 
 func (s *Session) executeCommand(cmd *exec.Cmd) error {
@@ -183,8 +222,8 @@ func (s *Session) executeCommand(cmd *exec.Cmd) error {
 		return err
 	}
 
-	go readPipe(stdout, s.stdoutChan)
-	go readPipe(stderr, s.stderrChan)
+	go readPipe(stdout, s.stdoutContainer.NotifyChan)
+	go readPipe(stderr, s.stderrContainer.NotifyChan)
 
 	err = cmd.Start()
 	if err != nil {
@@ -194,31 +233,24 @@ func (s *Session) executeCommand(cmd *exec.Cmd) error {
 	return cmd.Wait()
 }
 
-func readPipe(pipe io.ReadCloser, output chan<- string) {
+func readPipe(pipe io.ReadCloser, output chan<- models.StdLine) {
 	scanner := bufio.NewScanner(pipe)
 	for scanner.Scan() {
 		if msg := scanner.Text(); msg != "" {
-			output <- msg
+			output <- models.StdLine{
+				Time: time.Now(),
+				Data: msg,
+			}
 		}
 	}
+
 	pipe.Close()
 }
 
-func (s *Session) startStdPipesLogging(logger *common.Logger, ctx context.Context) {
-	go func() {
-		for {
-			select {
-			case <-ctx.Done():
-				return
-			case out := <-s.stdoutChan:
-				logger.Info(out, "reader", "STDOUT")
+func makePipeLogger(sc *StdContainer, logger *common.Logger) *StdListener {
+	var pipeLoggerListener StdListener = func(line *models.StdLine) {
+		logger.Info(line.Data, "reader", sc.Name)
+	}
 
-			case err := <-s.stderrChan:
-				logger.Info(err, "reader", "STDERR")
-
-			case in := <-s.stdinChan:
-				logger.Info(in, "reader", "STDIN")
-			}
-		}
-	}()
+	return &pipeLoggerListener
 }

@@ -8,7 +8,6 @@ import (
 	"syscall"
 )
 
-// redirectStderr to the file passed in
 func RedirectStderr(f *os.File) {
 	err := syscall.Dup2(int(f.Fd()), int(os.Stderr.Fd()))
 	if err != nil {

@@ -1,25 +1,27 @@
 package models
 
-type ResponsType MessageType
+type ResponseType MessageType
 
 const (
-	Ack ResponsType = "AckResponse"
-	Err ResponsType = "ErrorResponse"
+	AckRes    ResponseType = "AckResponse"
+	ErrRes    ResponseType = "ErrorResponse"
+	OutputRes ResponseType = "OutputResponse"
 )
 
-var responseTypeMap = map[ResponsType]func() CogoMessage{
-	Ack: func() CogoMessage { return &AckResponse{BaseCogoMessage: BaseCogoMessage{AckResponseDetails}} },
-	Err: func() CogoMessage { return &KillRequest{BaseCogoMessage: BaseCogoMessage{KillRequestDetails}} },
+var responseTypeMap = map[ResponseType]func() CogoMessage{
+	AckRes:    func() CogoMessage { return &AckResponse{BaseCogoMessage: BaseCogoMessage{AckResponseDetails}} },
+	ErrRes:    func() CogoMessage { return &KillRequest{BaseCogoMessage: BaseCogoMessage{KillRequestDetails}} },
+	OutputRes: func() CogoMessage { return &OutputResponse{BaseCogoMessage: BaseCogoMessage{OutputResponseDetails}} },
 }
 
 func GetResponse(responseType MessageType) CogoMessage {
-	if resBuilder := responseTypeMap[ResponsType(responseType)]; resBuilder != nil {
+	if resBuilder := responseTypeMap[ResponseType(responseType)]; resBuilder != nil {
 		return resBuilder()
 	}
 	return nil
 }
 
-var AckResponseDetails = CogoMessageDetails{Version: 1, Type: MessageType(Ack)}
+var AckResponseDetails = CogoMessageDetails{Version: 1, Type: MessageType(AckRes)}
 
 type AckResponse struct {
 	BaseCogoMessage
@@ -31,7 +33,7 @@ func NewAckResponse() *AckResponse {
 	}
 }
 
-var ErrResponseDetails = CogoMessageDetails{Version: 1, Type: MessageType(Err)}
+var ErrResponseDetails = CogoMessageDetails{Version: 1, Type: MessageType(ErrRes)}
 
 type ErrResponse struct {
 	BaseCogoMessage
@@ -42,5 +44,19 @@ func NewErrResponse(err error) *ErrResponse {
 	return &ErrResponse{
 		BaseCogoMessage: BaseCogoMessage{ExecuteRequestDetails},
 		Err:             err,
+	}
+}
+
+var OutputResponseDetails = CogoMessageDetails{Version: 1, Type: MessageType(OutputRes)}
+
+type OutputResponse struct {
+	BaseCogoMessage
+	Lines []StdLine
+}
+
+func NewOutputResponse(output *[]StdLine) *OutputResponse {
+	return &OutputResponse{
+		BaseCogoMessage: BaseCogoMessage{OutputResponseDetails},
+		Lines:           *output,
 	}
 }
