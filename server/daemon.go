@@ -77,36 +77,52 @@ func (daemon *CogoDaemon) handleMessage(conn net.Conn) {
 	switch req := msg.(type) {
 	case *models.ExecuteRequest:
 		daemon.commandService.HandleCommand(req)
-		daemon.Ack(conn)
+		_ = daemon.Ack(conn)
 		return
 	case *models.KillRequest:
 		daemon.commandService.HandleKill(req)
-		daemon.Ack(conn)
+		_ = daemon.Ack(conn)
 		return
 	case *models.OutputRequest:
-		output := daemon.commandService.HandleOutput(req)
-		daemon.Output(conn, output)
+		ctx, cancel := context.WithCancel(context.TODO())
+		defer cancel()
+
+		for output := range daemon.commandService.HandleOutput(req, ctx) {
+			daemon.logger.Info("sending", "output", output)
+
+			if err := daemon.Output(conn, output); err != nil {
+				daemon.logger.Warn("a connection has been closed while streaming, stop streaming")
+				cancel()
+			}
+		}
+
+		_ = daemon.Ack(conn)
 	default:
 		errMsg := "unkown request type"
 		logger.Error(errMsg, "request", msg, "type", req)
-		daemon.Err(conn, errors.New(errMsg))
+		if err := daemon.Err(conn, errors.New(errMsg)); err != nil {
+			logger.Error("failed to send error response to connection", "remoteAddr", conn.RemoteAddr().String())
+		}
 	}
 }
 
-func (daemon *CogoDaemon) Ack(conn net.Conn) {
-	daemon.sendResponse(conn, models.NewAckResponse())
+func (daemon *CogoDaemon) Ack(conn net.Conn) error {
+	return daemon.sendResponse(conn, models.NewAckResponse())
 }
 
-func (daemon *CogoDaemon) Err(conn net.Conn, err error) {
-	daemon.sendResponse(conn, models.NewErrResponse(err))
+func (daemon *CogoDaemon) Err(conn net.Conn, err error) error {
+	return daemon.sendResponse(conn, models.NewErrResponse(err))
 }
 
-func (daemon *CogoDaemon) Output(conn net.Conn, output *[]models.StdLine) {
-	daemon.sendResponse(conn, models.NewOutputResponse(output))
+func (daemon *CogoDaemon) Output(conn net.Conn, output *models.StdLine) error {
+	return daemon.sendResponse(conn, models.NewOutputResponse(output))
 }
 
-func (daemon *CogoDaemon) sendResponse(conn net.Conn, msg models.CogoMessage) {
+func (daemon *CogoDaemon) sendResponse(conn net.Conn, msg models.CogoMessage) error {
 	if err := ipc.SendMsg(conn, msg); err != nil {
 		daemon.logger.Error("failed to send", "msg", msg)
+		return err
 	}
+
+	return nil
 }

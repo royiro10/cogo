@@ -44,24 +44,32 @@ func (client *CogoClient) Kill(request *models.KillRequest) error {
 func (client *CogoClient) Output(request *models.OutputRequest) error {
 	client.sendData(request)
 
-	msg, err := ipc.ReciveMsg(client.ipcClient.Conn)
-	if err != nil {
-		return err
-	}
+	fmt.Printf("output for session: %s\n", request.SessionId)
 
-	switch response := msg.(type) {
-	case *models.OutputResponse:
-		fmt.Println(fmt.Sprintf("output for session: %s", request.SessionId))
+	for {
+		msg, err := ipc.ReciveMsg(client.ipcClient.Conn)
+		if err != nil {
+			if err == ipc.ErrConnectionClosed {
+				client.logger.Debug("connection closed from the daemon, assume stream has ended")
+				return nil
+			}
 
-		for _, line := range response.Lines {
-			fmt.Println(line.Data)
+			return err
 		}
 
-	default:
-		client.logger.Error("unkown response type", "response", response)
-	}
+		switch response := msg.(type) {
+		case *models.OutputResponse:
+			fmt.Println(response.StdLine.Data)
 
-	return nil
+		case *models.AckResponse:
+			client.logger.Debug("recive ack response to end listening for outputs")
+			return nil
+
+		default:
+			client.logger.Error("unkown response type", "response", response)
+			return fmt.Errorf("unkown response type: %s, %v", response.GetDetails().Type, response)
+		}
+	}
 }
 
 func (client *CogoClient) Close() {

@@ -9,11 +9,17 @@ import (
 func InitFlags() *models.CogoCLIFlags {
 	cogoFlags := &models.CogoCLIFlags{}
 
-	flag.StringVar(&cogoFlags.Session, "session", "", "sepcify a session to interact with")
-	flag.StringVar(&cogoFlags.Session, "s", "", "sepcify a session to interact with")
+	sessionMsg := "sepcify a session to interact with"
+	flag.StringVar(&cogoFlags.Session, "session", "", sessionMsg)
+	flag.StringVar(&cogoFlags.Session, "s", "", sessionMsg)
 
-	flag.BoolVar(&cogoFlags.IsLogging, "logger", false, "shold log")
-	flag.BoolVar(&cogoFlags.IsLogging, "l", false, "shold log")
+	isLogging := "shold log"
+	flag.BoolVar(&cogoFlags.IsLogging, "logger", false, isLogging)
+	flag.BoolVar(&cogoFlags.IsLogging, "l", false, isLogging)
+
+	isStreamMsg := "should follow and return print output in stream"
+	flag.BoolVar(&cogoFlags.IsStream, "follow", false, isStreamMsg)
+	flag.BoolVar(&cogoFlags.IsStream, "f", false, isStreamMsg)
 
 	flag.Parse()
 
