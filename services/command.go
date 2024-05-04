@@ -76,7 +76,7 @@ func (s *CommandService) HandleKill(request *models.KillRequest) {
 	session.Kill()
 }
 
-func (s *CommandService) HandleOutput(request *models.OutputRequest) *[]models.StdLine {
+func (s *CommandService) HandleOutput(request *models.OutputRequest, ctx context.Context) chan *models.StdLine {
 	s.logger.Info("handle output", "sessionId", request.SessionId)
 
 	session, ok := s.sessions[request.SessionId]
@@ -87,9 +87,47 @@ func (s *CommandService) HandleOutput(request *models.OutputRequest) *[]models.S
 		s.logger.Debug("valid session Id not provided. created new session", "sessionId", request.SessionId)
 	}
 
+	outputChan := make(chan *models.StdLine)
+
+	switch isStream := request.IsStream; isStream {
+	case true:
+		go s.getOutputStream(session, outputChan, ctx)
+	case false:
+		go s.getOutputResult(session, outputChan, ctx)
+	default:
+		s.logger.Error("could not recognized output mode")
+	}
+
+	return outputChan
+}
+
+func (s *CommandService) getOutputStream(session *Session, outputChan chan *models.StdLine, ctx context.Context) {
+	var notifyStream StdListener = func(line *models.StdLine) {
+		outputChan <- line
+	}
+
+	session.stdoutContainer.AddListener(&notifyStream)
+	defer session.stdoutContainer.RemoveListener(&notifyStream)
+
+	<-ctx.Done()
+	s.logger.Info("stop streaming signal was recived")
+}
+
+func (s *CommandService) getOutputResult(session *Session, outputChan chan *models.StdLine, ctx context.Context) {
 	output := session.GetOutput(-1)
 	s.logger.Info("output", "view", output)
-	return output
+
+	defer close(outputChan)
+
+	for lineIndex, line := range *output {
+		select {
+		case <-ctx.Done():
+			s.logger.Info("stop streaming signal was recived", "outputLineIndex", lineIndex)
+			return
+		default:
+			outputChan <- &line
+		}
+	}
 }
 
 type Session struct {
@@ -166,6 +204,16 @@ func (s *Session) GetOutput(tailCount int) *[]models.StdLine {
 	output := s.stdoutContainer.ViewTail(tailCount)
 	return &output
 }
+
+// func (s *Session) GetOutputStream(ctx context.Context) chan *models.StdLine {
+// 	outputChan := make(chan *models.StdLine)
+
+// 	var notifyStream StdListener = func(line *models.StdLine) {
+// 		outputChan <- line
+// 	}
+
+// 	s.stdoutContainer.AddListener(&notifyStream)
+// }
 
 func (s *Session) Start() {
 	if !s.executionMu.TryLock() {

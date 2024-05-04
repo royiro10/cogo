@@ -51,12 +51,12 @@ var OutputResponseDetails = CogoMessageDetails{Version: 1, Type: MessageType(Out
 
 type OutputResponse struct {
 	BaseCogoMessage
-	Lines []StdLine
+	StdLine
 }
 
-func NewOutputResponse(output *[]StdLine) *OutputResponse {
+func NewOutputResponse(output *StdLine) *OutputResponse {
 	return &OutputResponse{
 		BaseCogoMessage: BaseCogoMessage{OutputResponseDetails},
-		Lines:           *output,
+		StdLine:         *output,
 	}
 }

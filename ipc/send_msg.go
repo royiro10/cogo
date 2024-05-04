@@ -1,22 +1,34 @@
 package ipc
 
 import (
+	"bytes"
+	"encoding/binary"
 	"encoding/json"
-	"fmt"
 	"net"
 
 	"github.com/royiro10/cogo/models"
 )
 
 func SendMsg(conn net.Conn, msg models.CogoMessage) error {
-	msgRaw, err := json.Marshal(msg)
+	rawMsg, err := json.Marshal(msg)
 	if err != nil {
 		return err
 	}
 
-	if _, err := fmt.Fprintln(conn, string(msgRaw)); err != nil {
+	header := ipcHeaderDefinition{
+		Version:     uint16(IPCPacketVersion),
+		MessageSize: uint64(len(rawMsg)),
+	}
+
+	buf := new(bytes.Buffer)
+	if err := binary.Write(buf, binary.BigEndian, header); err != nil {
 		return err
 	}
 
-	return nil
+	if _, err := buf.Write(rawMsg); err != nil {
+		return err
+	}
+
+	_, err = conn.Write(buf.Bytes())
+	return err
 }

@@ -58,11 +58,13 @@ var OutputRequestDetails = CogoMessageDetails{Version: 1, Type: MessageType(Outp
 type OutputRequest struct {
 	BaseCogoMessage
 	SessionId string
+	IsStream  bool
 }
 
-func NewOutputRequest(sessionId string) *OutputRequest {
+func NewOutputRequest(sessionId string, isStream bool) *OutputRequest {
 	return &OutputRequest{
 		BaseCogoMessage: BaseCogoMessage{OutputRequestDetails},
 		SessionId:       sessionId,
+		IsStream:        isStream,
 	}
 }

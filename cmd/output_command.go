@@ -23,6 +23,6 @@ func makeOutputCommand(lockService common.LockService, logger *common.Logger) mo
 			session = services.DefaultSessionKey
 		}
 
-		return client.Output(models.NewOutputRequest(session))
+		return client.Output(models.NewOutputRequest(session, cmdInfo.Flags.IsStream))
 	}
 }
