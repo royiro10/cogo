@@ -1,6 +1,7 @@
 package ipc
 
 import (
+	"encoding/binary"
 	"net"
 
 	"github.com/royiro10/cogo/common"
@@ -21,6 +22,10 @@ type IpcServer struct {
 }
 
 var IPCPacketVersion = 1
+
+// using big-endian beacuse it is the standart in networks communication
+// there is not need at the moment for non-conventional bytes optimization
+var IPCByteOrder = binary.BigEndian
 
 type ipcHeaderDefinition struct {
 	Version     uint16

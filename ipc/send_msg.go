@@ -21,7 +21,7 @@ func SendMsg(conn net.Conn, msg models.CogoMessage) error {
 	}
 
 	buf := new(bytes.Buffer)
-	if err := binary.Write(buf, binary.BigEndian, header); err != nil {
+	if err := binary.Write(buf, IPCByteOrder, header); err != nil {
 		return err
 	}
 

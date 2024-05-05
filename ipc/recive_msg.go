@@ -45,7 +45,7 @@ func reciveIpcPacket(conn net.Conn) (*IpcPacket, error) {
 		Message: &models.BaseCogoMessage{},
 	}
 
-	if err := binary.Read(bytes.NewReader(headerBytes), binary.BigEndian, &packet.Header); err != nil {
+	if err := binary.Read(bytes.NewReader(headerBytes), IPCByteOrder, &packet.Header); err != nil {
 		return &packet, err
 	}
 
