@@ -24,6 +24,7 @@ go.work
 *.log
 logs
 cogo.lock
+cogo
 
 tmp
 .vscode

@@ -5,6 +5,7 @@ import (
 	"io"
 	"log/slog"
 	"os"
+	"path/filepath"
 )
 
 // var DefaultLogger = CreateLogger(fmt.Sprintf("./logs/cogo_%d.log", os.Getpid()))
@@ -15,8 +16,29 @@ type Logger struct {
 	LogFile *os.File
 }
 
-func CreateLogger(logFile string) *Logger {
-	f, err := os.OpenFile(logFile, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
+type LoggerOptions struct {
+	LogPath string
+	LogFile string
+	Level   *slog.Level
+}
+
+func CreateLogger(options *LoggerOptions) *Logger {
+        level := slog.LevelInfo
+	if options.Level != nil {
+		level = *options.Level
+	}
+	
+	if _, err := os.Stat(options.LogPath); os.IsNotExist(err) {
+		err := os.MkdirAll(options.LogPath, 0644)
+		if err != nil {
+			panic(fmt.Sprintf("Could not make directory %q", options.LogPath))
+		}
+	}
+	f, err := os.OpenFile(
+		filepath.Join(options.LogPath, options.LogFile),
+		os.O_CREATE|os.O_WRONLY|os.O_APPEND,
+		0644,
+	)
 	if err != nil {
 		logger := &Logger{
 			slog.Default(),
@@ -32,7 +54,7 @@ func CreateLogger(logFile string) *Logger {
 	writer := io.MultiWriter(os.Stdout, f)
 	handler := slog.NewTextHandler(writer, &slog.HandlerOptions{
 		AddSource: true,
-		Level:     slog.LevelDebug,
+		Level:     level,
 	})
 	return &Logger{
 		slog.New(handler),

@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"log/slog"
 	"os"
 
 	"github.com/royiro10/cogo/cmd"
@@ -17,9 +18,13 @@ func main() {
 	flags := cmd.InitFlags()
 	args := flag.Args()
 
-	var logger = common.EmptyLogger
+	logger := common.EmptyLogger
 	if flags.IsLogging {
-		logger = common.CreateLogger(fmt.Sprintf("./logs/cogo_%d.log", os.Getpid()))
+		level := slog.LevelInfo
+		logger = common.CreateLogger(&common.LoggerOptions{
+			LogPath: "./logs",
+			LogFile: fmt.Sprintf("cogo_%d.log", os.Getpid()),
+			Level:   &level})
 	}
 
 	commandService := services.CreateCommandService(logger)
