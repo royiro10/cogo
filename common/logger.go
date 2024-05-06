@@ -16,7 +16,13 @@ type Logger struct {
 	LogFile *os.File
 }
 
-func CreateLogger(logPath string, logFile string) *Logger {
+func CreateLogger(logPath string, logFile string, levels ...slog.Level) *Logger {
+	var level slog.Level
+	if len(levels) > 0 {
+		level = levels[0]
+	} else {
+		level = slog.LevelInfo
+	}
 	if _, err := os.Stat(logPath); os.IsNotExist(err) {
 		err := os.MkdirAll(logPath, 0644)
 		if err != nil {
@@ -43,7 +49,7 @@ func CreateLogger(logPath string, logFile string) *Logger {
 	writer := io.MultiWriter(os.Stdout, f)
 	handler := slog.NewTextHandler(writer, &slog.HandlerOptions{
 		AddSource: true,
-		Level:     slog.LevelInfo,
+		Level:     level,
 	})
 	return &Logger{
 		slog.New(handler),

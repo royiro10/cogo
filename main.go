@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"log/slog"
 	"os"
 
 	"github.com/royiro10/cogo/cmd"
@@ -19,7 +20,11 @@ func main() {
 
 	logger := common.EmptyLogger
 	if flags.IsLogging {
-		logger = common.CreateLogger("./logs", fmt.Sprintf("cogo_%d.log", os.Getpid()))
+		logger = common.CreateLogger(
+			"./logs",
+			fmt.Sprintf("cogo_%d.log", os.Getpid()),
+			slog.LevelWarn,
+		)
 	}
 
 	commandService := services.CreateCommandService(logger)
