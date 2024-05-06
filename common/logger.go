@@ -23,7 +23,7 @@ type LoggerOptions struct {
 }
 
 func CreateLogger(options *LoggerOptions) *Logger {
-level := slog.LevelInfo
+        levels := slog.LevelInfo
 	if len(levels) > 0 {
 		level = levels[0]
 	}
