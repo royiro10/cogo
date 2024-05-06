@@ -16,21 +16,27 @@ type Logger struct {
 	LogFile *os.File
 }
 
-func CreateLogger(logPath string, logFile string, levels ...slog.Level) *Logger {
+type LoggerOptions struct {
+	LogPath string
+	LogFile string
+	Level   *slog.Level
+}
+
+func CreateLogger(options *LoggerOptions) *Logger {
 	var level slog.Level
-	if len(levels) > 0 {
-		level = levels[0]
+	if options.Level != nil {
+		level = *options.Level
 	} else {
 		level = slog.LevelInfo
 	}
-	if _, err := os.Stat(logPath); os.IsNotExist(err) {
-		err := os.MkdirAll(logPath, 0644)
+	if _, err := os.Stat(options.LogPath); os.IsNotExist(err) {
+		err := os.MkdirAll(options.LogPath, 0644)
 		if err != nil {
-			panic(fmt.Sprintf("Could not make directory %q", logPath))
+			panic(fmt.Sprintf("Could not make directory %q", options.LogPath))
 		}
 	}
 	f, err := os.OpenFile(
-		filepath.Join(logPath, logFile),
+		filepath.Join(options.LogPath, options.LogFile),
 		os.O_CREATE|os.O_WRONLY|os.O_APPEND,
 		0644,
 	)
