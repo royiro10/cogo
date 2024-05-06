@@ -20,8 +20,7 @@ func CreateLogger(logPath string, logFile string) *Logger {
 	if _, err := os.Stat(logPath); os.IsNotExist(err) {
 		err := os.MkdirAll(logPath, 0644)
 		if err != nil {
-			// TODO: How to handle without a logger?
-			return nil
+			panic(fmt.Sprintf("Could not make directory %q", logPath))
 		}
 	}
 	f, err := os.OpenFile(
