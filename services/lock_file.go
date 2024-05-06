@@ -63,7 +63,7 @@ func (s *LockFileService) acquireLockFile(lockFile string) error {
 		return fmt.Errorf("can not acquire, already locked")
 	}
 
-	f, err := os.OpenFile(lockFile, os.O_CREATE|os.O_EXCL, 0600)
+	f, err := os.OpenFile(lockFile, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0600)
 	if err != nil {
 		return err
 	}
