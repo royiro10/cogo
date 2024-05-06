@@ -23,13 +23,11 @@ type LoggerOptions struct {
 }
 
 func CreateLogger(options *LoggerOptions) *Logger {
-	var level slog.Level
-	if options.Level != nil {
-		level = *options.Level
-	} else {
-		level = slog.LevelInfo
+level := slog.LevelInfo
+	if len(levels) > 0 {
+		level = levels[0]
 	}
-	if _, err := os.Stat(options.LogPath); os.IsNotExist(err) {
+if _, err := os.Stat(options.LogPath); os.IsNotExist(err) {
 		err := os.MkdirAll(options.LogPath, 0644)
 		if err != nil {
 			panic(fmt.Sprintf("Could not make directory %q", options.LogPath))
