@@ -17,9 +17,9 @@ func main() {
 	flags := cmd.InitFlags()
 	args := flag.Args()
 
-	var logger = common.EmptyLogger
+	logger := common.EmptyLogger
 	if flags.IsLogging {
-		logger = common.CreateLogger(fmt.Sprintf("./logs/cogo_%d.log", os.Getpid()))
+		logger = common.CreateLogger("./logs", fmt.Sprintf("cogo_%d.log", os.Getpid()))
 	}
 
 	commandService := services.CreateCommandService(logger)
