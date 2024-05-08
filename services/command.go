@@ -39,7 +39,7 @@ func (s *CommandService) HandleCommand(request *models.ExecuteRequest) {
 		session = NewSession(request.SessionId, s.logger)
 		s.sessions[request.SessionId] = session
 
-		s.logger.Debug("valid session Id not provided. created new session", "sessionId", request.SessionId)
+		s.logger.Debug("requested session Id does not exists. created new session", "sessionId", request.SessionId)
 	}
 
 	args := strings.Fields(request.Command)
@@ -131,8 +131,7 @@ func (s *CommandService) getOutputResult(session *Session, outputChan chan *mode
 }
 
 type Session struct {
-	ID       string
-	ExecChan chan *exec.Cmd
+	ID string
 
 	queueMu        sync.Mutex
 	executionMu    sync.Mutex
@@ -150,8 +149,7 @@ type Session struct {
 
 func NewSession(sessionId string, logger *common.Logger) *Session {
 	s := &Session{
-		ID:       sessionId,
-		ExecChan: make(chan *exec.Cmd),
+		ID: sessionId,
 
 		commandQueue: make([]*exec.Cmd, 0),
 		killChan:     make(chan struct{}),
@@ -205,16 +203,6 @@ func (s *Session) GetOutput(tailCount int) *[]models.StdLine {
 	return &output
 }
 
-// func (s *Session) GetOutputStream(ctx context.Context) chan *models.StdLine {
-// 	outputChan := make(chan *models.StdLine)
-
-// 	var notifyStream StdListener = func(line *models.StdLine) {
-// 		outputChan <- line
-// 	}
-
-// 	s.stdoutContainer.AddListener(&notifyStream)
-// }
-
 func (s *Session) Start() {
 	if !s.executionMu.TryLock() {
 		return
@@ -247,12 +235,17 @@ func (s *Session) Start() {
 
 func (s *Session) Stop() {
 	s.commandQueue = make([]*exec.Cmd, 0)
+	if s.runningCommand == nil {
+		return
+	}
 
 	go func() {
 		s.killChan <- struct{}{}
 	}()
 
-	if err := s.runningCommand.Process.Kill(); err != nil {
+	runningCommand := s.runningCommand
+	s.runningCommand = nil
+	if err := runningCommand.Process.Kill(); err != nil {
 		s.logger.Warn("error while canceling command", "err", err)
 		return
 	}
