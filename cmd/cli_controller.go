@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"fmt"
-	"strings"
 
 	"github.com/royiro10/cogo/common"
 	"github.com/royiro10/cogo/models"
@@ -77,13 +76,21 @@ func (cli *CogoCLI) Handle(args []string, flags *models.CogoCLIFlags) {
 }
 
 func (cli *CogoCLI) UsageMsg() {
-	avilableCommands := make([]string, len(cli.commands))
+	msg := `Usage: cogo [flags] [command] [arguments]
 
-	i := 0
-	for k := range cli.commands {
-		avilableCommands[i] = k
-		i++
-	}
+	Commands:
+	  start                      Start the Cogo daemon.
+	  stop                       Stop the Cogo daemon.
+	  run "command"              Run a command in the background.
+	  kill                       Kill a running command.
+	  output                     Retrieve the output of a specific session.
+	
+	Flags:
+	  -s, --session <session-id> Specify a session to interact with.
+	  -l, --logger               Enable logging.
+	  -f, --follow               Stream the output of the running command.
+	
+Please refer to the README.md for more detailed information on each command and their usage.`
 
-	fmt.Printf("Usage: cogo <%s>\n", strings.Join(avilableCommands, " | "))
+	fmt.Println(msg)
 }
