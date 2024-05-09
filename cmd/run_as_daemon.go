@@ -15,8 +15,8 @@ import (
 func makeHandleRunAsDaemon(lockService common.LockService, logger *common.Logger, daemon server.Daemon) models.CogoCLICommand {
 	handleDaemon := func(cmdInfo models.CogoCLIInfo) error {
 		if lockService.IsAcquired(LOCK_FILE) {
-			logger.Info("Daemon is already running.")
-			return fmt.Errorf("Daemon is already running.")
+			logger.Info("daemon is already running")
+			return fmt.Errorf("daemon is already running")
 		}
 
 		release, err := lockService.Acquire(LOCK_FILE)
