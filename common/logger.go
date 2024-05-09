@@ -23,11 +23,11 @@ type LoggerOptions struct {
 }
 
 func CreateLogger(options *LoggerOptions) *Logger {
-        level := slog.LevelInfo
+	level := slog.LevelInfo
 	if options.Level != nil {
 		level = *options.Level
 	}
-	
+
 	if _, err := os.Stat(options.LogPath); os.IsNotExist(err) {
 		err := os.MkdirAll(options.LogPath, 0644)
 		if err != nil {
