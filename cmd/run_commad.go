@@ -7,7 +7,7 @@ import (
 	"github.com/royiro10/cogo/client"
 	"github.com/royiro10/cogo/common"
 	"github.com/royiro10/cogo/models"
-	"github.com/royiro10/cogo/services"
+	"github.com/royiro10/cogo/services/commands"
 )
 
 func makeRunCommand(lockService common.LockService, logger *common.Logger) models.CogoCLICommand {
@@ -22,7 +22,7 @@ func makeRunCommand(lockService common.LockService, logger *common.Logger) model
 
 		session := cmdInfo.Flags.Session
 		if session == "" {
-			session = services.DefaultSessionKey
+			session = commands.DefaultSessionKey
 		}
 
 		return client.Run(models.NewExecuteRequest(session, strings.Join(cmdInfo.Args[:], " ")))
