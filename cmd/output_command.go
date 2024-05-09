@@ -6,7 +6,7 @@ import (
 	"github.com/royiro10/cogo/client"
 	"github.com/royiro10/cogo/common"
 	"github.com/royiro10/cogo/models"
-	"github.com/royiro10/cogo/services"
+	"github.com/royiro10/cogo/services/commands"
 )
 
 func makeOutputCommand(lockService common.LockService, logger *common.Logger) models.CogoCLICommand {
@@ -20,7 +20,7 @@ func makeOutputCommand(lockService common.LockService, logger *common.Logger) mo
 
 		session := cmdInfo.Flags.Session
 		if session == "" {
-			session = services.DefaultSessionKey
+			session = commands.DefaultSessionKey
 		}
 
 		return client.Output(models.NewOutputRequest(session, cmdInfo.Flags.IsStream))

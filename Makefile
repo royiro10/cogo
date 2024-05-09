@@ -44,7 +44,7 @@ daemon_logs:
 	do \
 		if echo "$${line}" | grep -q "level=ERROR"; then \
 			echo -e "$(COLOR_RED)level=$${line#*level=}$(END_COLOR)"; \
-		elif echo "$${line}" | grep -q "level=INFO"; then \
+		elif echo "$${line}" | grep -q "level=DEBUG"; then \
 			echo -e "$(COLOR_GREEN)level=$${line#*level=}$(END_COLOR)"; \
 		elif echo "$${line}" | grep -q "level=WARN"; then \
 			echo -e "$(COLOR_YELLOW)level=$${line#*level=}$(END_COLOR)"; \

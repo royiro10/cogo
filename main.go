@@ -10,6 +10,7 @@ import (
 	"github.com/royiro10/cogo/common"
 	"github.com/royiro10/cogo/server"
 	"github.com/royiro10/cogo/services"
+	"github.com/royiro10/cogo/services/commands"
 )
 
 type CommandArgs string
@@ -20,14 +21,14 @@ func main() {
 
 	logger := common.EmptyLogger
 	if flags.IsLogging {
-		level := slog.LevelInfo
+		level := slog.LevelDebug
 		logger = common.CreateLogger(&common.LoggerOptions{
 			LogPath: "./logs",
 			LogFile: fmt.Sprintf("cogo_%d.log", os.Getpid()),
 			Level:   &level})
 	}
 
-	commandService := services.CreateCommandService(logger)
+	commandService := commands.CreateCommandService(logger)
 	lockService := services.CreateLockFileService(logger)
 	daemon := server.CreateCogoDaemon(logger, commandService)
 

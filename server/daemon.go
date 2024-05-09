@@ -8,7 +8,7 @@ import (
 	"github.com/royiro10/cogo/common"
 	"github.com/royiro10/cogo/ipc"
 	"github.com/royiro10/cogo/models"
-	"github.com/royiro10/cogo/services"
+	services "github.com/royiro10/cogo/services/commands"
 	"github.com/royiro10/cogo/util"
 )
 
