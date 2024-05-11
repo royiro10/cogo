@@ -8,8 +8,10 @@ import (
 	"github.com/royiro10/cogo/models"
 )
 
-const COGO_CONN_WIN32 = "localhost:3001"
-const COGO_CONN_UNIX = "./cogo.sock"
+const (
+	COGO_CONN_WIN32 = "localhost:3001"
+	COGO_CONN_UNIX  = "./cogo.sock"
+)
 
 type IpcClient struct {
 	Conn        net.Conn
@@ -36,4 +38,8 @@ type IpcPacket struct {
 	Header  ipcHeaderDefinition
 	Raw     []byte
 	Message *models.BaseCogoMessage
+}
+
+func GetUnixConnection() string {
+	return common.JoinWithWorkDir(COGO_CONN_UNIX)
 }
