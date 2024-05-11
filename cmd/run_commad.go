@@ -12,7 +12,7 @@ import (
 
 func makeRunCommand(lockService common.LockService, logger *common.Logger) models.CogoCLICommand {
 	return func(cmdInfo models.CogoCLIInfo) error {
-		if !lockService.IsAcquired(LOCK_FILE) {
+		if !lockService.IsAcquired(GetLockFile()) {
 			// TODO: automaticcly start daemon
 			return fmt.Errorf("cogo must be start before running commands")
 		}

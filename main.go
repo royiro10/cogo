@@ -22,7 +22,7 @@ func main() {
 	if flags.IsLogging {
 		level := slog.LevelInfo
 		logger = common.CreateLogger(&common.LoggerOptions{
-			LogPath: common.JoinWithWorkDir("logger"),
+			LogPath: common.JoinWithWorkDir("logs"),
 			LogFile: fmt.Sprintf("cogo_%d.log", os.Getpid()),
 			Level:   &level,
 		})

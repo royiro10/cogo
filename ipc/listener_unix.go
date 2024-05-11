@@ -10,17 +10,17 @@ import (
 )
 
 func MakeIpcServer(logger *common.Logger) (*IpcServer, error) {
-	listener, err := net.Listen("unix", COGO_CONN_UNIX)
+	listener, err := net.Listen("unix", GetUnixConnection())
 	if err != nil {
 		logger.Error("Failed to create Unix domain socket listener:", err)
-		os.Remove(COGO_CONN_UNIX)
+		os.Remove(GetUnixConnection())
 		return nil, err
 	}
 
 	server := &IpcServer{
 		Listener: listener,
 		ReleaseFunc: func() {
-			os.Remove(COGO_CONN_UNIX)
+			os.Remove(GetUnixConnection())
 			listener.Close()
 		},
 	}

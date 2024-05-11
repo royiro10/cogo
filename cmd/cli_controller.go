@@ -30,6 +30,10 @@ type CogoCLI struct {
 	commands map[string]models.CogoCLICommand
 }
 
+func GetLockFile() string {
+	return common.JoinWithWorkDir(LOCK_FILE)
+}
+
 func CreateCLI(deps CogoCLIDeps) *CogoCLI {
 	commands := map[string]models.CogoCLICommand{
 		RUN_DAEMON:     makeHandleRunAsDaemon(deps.LockService, deps.Logger, deps.CogoDaemon),
