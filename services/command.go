@@ -39,29 +39,32 @@ func (s *CommandService) HandleCommand(request *models.ExecuteRequest) {
 		session = NewSession(request.SessionId, s.logger)
 		s.sessions[request.SessionId] = session
 
-		s.logger.Debug("requested session Id does not exists. created new session", "sessionId", request.SessionId)
+		s.logger.Debug(
+			"requested session Id does not exists. created new session",
+			"sessionId",
+			request.SessionId,
+		)
 	}
 
 	args := strings.Fields(request.Command)
 
 	commands := make([]*exec.Cmd, 0)
 
-	curser := 0
+	cursor := 0
 	for i := 0; i < len(args); i++ {
 		if args[i] == "&&" {
-			commands = append(commands, exec.Command(args[curser], args[curser+1:i]...))
-			curser = i + 1
+			commands = append(commands, exec.Command(args[cursor], args[cursor+1:i]...))
+			cursor = i + 1
 		}
 	}
 
-	if curser != len(args) {
-		commands = append(commands, exec.Command(args[curser], args[curser+1:]...))
+	if cursor != len(args) {
+		commands = append(commands, exec.Command(args[cursor], args[cursor+1:]...))
 	}
 
 	for _, cmd := range commands {
 		session.Run(cmd)
 	}
-
 }
 
 func (s *CommandService) HandleKill(request *models.KillRequest) {
@@ -76,7 +79,10 @@ func (s *CommandService) HandleKill(request *models.KillRequest) {
 	session.Kill()
 }
 
-func (s *CommandService) HandleOutput(request *models.OutputRequest, ctx context.Context) chan *models.StdLine {
+func (s *CommandService) HandleOutput(
+	request *models.OutputRequest,
+	ctx context.Context,
+) chan *models.StdLine {
 	s.logger.Info("handle output", "sessionId", request.SessionId)
 
 	session, ok := s.sessions[request.SessionId]
@@ -84,7 +90,11 @@ func (s *CommandService) HandleOutput(request *models.OutputRequest, ctx context
 		session = NewSession(request.SessionId, s.logger)
 		s.sessions[request.SessionId] = session
 
-		s.logger.Debug("valid session Id not provided. created new session", "sessionId", request.SessionId)
+		s.logger.Debug(
+			"valid session Id not provided. created new session",
+			"sessionId",
+			request.SessionId,
+		)
 	}
 
 	outputChan := make(chan *models.StdLine)
@@ -101,7 +111,11 @@ func (s *CommandService) HandleOutput(request *models.OutputRequest, ctx context
 	return outputChan
 }
 
-func (s *CommandService) getOutputStream(session *Session, outputChan chan *models.StdLine, ctx context.Context) {
+func (s *CommandService) getOutputStream(
+	session *Session,
+	outputChan chan *models.StdLine,
+	ctx context.Context,
+) {
 	var notifyStream StdListener = func(line *models.StdLine) {
 		outputChan <- line
 	}
@@ -113,7 +127,11 @@ func (s *CommandService) getOutputStream(session *Session, outputChan chan *mode
 	s.logger.Info("stop streaming signal was recived")
 }
 
-func (s *CommandService) getOutputResult(session *Session, outputChan chan *models.StdLine, ctx context.Context) {
+func (s *CommandService) getOutputResult(
+	session *Session,
+	outputChan chan *models.StdLine,
+	ctx context.Context,
+) {
 	output := session.GetOutput(-1)
 	s.logger.Info("output", "view", output)
 
