@@ -4,6 +4,7 @@ import (
 	"context"
 	"os/exec"
 	"strings"
+	"time"
 
 	"github.com/royiro10/cogo/common"
 	"github.com/royiro10/cogo/models"
@@ -25,6 +26,71 @@ func CreateCommandService(logger *common.Logger) *CommandService {
 	service.sessions[DefaultSessionKey] = NewSession(DefaultSessionKey, service.logger, context.TODO())
 
 	return service
+}
+
+func (s *CommandService) HandleListSessions(request *models.ListSessionsRequest) *models.ListSessionsResponse {
+	s.logger.Info("handle list sessions", "sessions", len(s.sessions))
+	sessionIds := make([]string, len(s.sessions))
+
+	i := 0
+	for k := range s.sessions {
+		sessionIds[i] = k
+		i++
+	}
+
+	return models.NewListSessionsResponse(sessionIds)
+}
+
+func (s *CommandService) HandleStatus(request *models.StatusRequest, ctx context.Context) chan *models.SessionStatus {
+	s.logger.Info("handle status", "sessionId", request.SessionId, "isStream", request.IsStream)
+
+	statusChan := make(chan *models.SessionStatus)
+
+	session, ok := s.sessions[request.SessionId]
+	if !ok {
+		s.logger.Warn("no session matching requested session", "session", request.SessionId)
+		return statusChan
+	}
+
+	switch isStream := request.IsStream; isStream {
+	case false:
+		go s.getStatusResult(session, statusChan, ctx)
+	case true:
+		// TODO: implement
+		s.logger.Error("not implemented")
+	default:
+		s.logger.Error("could not recognized output mode")
+	}
+
+	return statusChan
+}
+
+func (s *CommandService) getStatusResult(session *Session, statusChan chan *models.SessionStatus, ctx context.Context) {
+	defer close(statusChan)
+
+	status := &models.SessionStatus{
+		SessionStatus:        string(session.GetStatus()),
+		LastCommand:          "none",
+		LastActionTime:       time.UnixMilli(0),
+		ExecutedCommandCount: 0,
+		ExecuteQueueSize:     uint(session.GetExecutionQueueSize()),
+		OutputViewSize:       uint(session.GetOutputSize()),
+	}
+
+	if history := session.GetHistory(); len(history) > 0 {
+		status.LastCommand = history[len(history)-1].String()
+		status.LastActionTime = session.LastActionTime
+		status.ExecutedCommandCount = uint(len(history))
+	}
+
+	select {
+	case <-ctx.Done():
+		s.logger.Info("stop streaming signal was recived")
+		return
+
+	default:
+		statusChan <- status
+	}
 }
 
 func (s *CommandService) HandleCommand(request *models.ExecuteRequest) {
@@ -97,7 +163,7 @@ func (s *CommandService) getOutputStream(session *Session, outputChan chan *mode
 
 func (s *CommandService) getOutputResult(session *Session, outputChan chan *models.StdLine, ctx context.Context) {
 	output := session.GetOutput(-1)
-	s.logger.Info("output", "view", output)
+	s.logger.Debug("output", "view", output)
 
 	defer close(outputChan)
 
