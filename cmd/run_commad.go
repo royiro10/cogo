@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"os"
 	"strings"
 
 	"github.com/royiro10/cogo/client"
@@ -16,8 +17,11 @@ func makeRunCommand(lockService common.LockService, logger *common.Logger) model
 			// TODO: automaticcly start daemon
 			return fmt.Errorf("cogo must be start before running commands")
 		}
-
-		client := client.CreateCogoClient(logger)
+		workdir, err := os.Getwd()
+		if err != nil {
+			logger.Fatal(err)
+		}
+		client := client.CreateCogoClient(logger, workdir)
 		defer client.Close()
 
 		session := cmdInfo.Flags.Session

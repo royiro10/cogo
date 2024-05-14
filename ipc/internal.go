@@ -16,6 +16,7 @@ const (
 type IpcClient struct {
 	Conn        net.Conn
 	ReleaseFunc common.IDisposable
+	Workdir     string
 }
 
 type IpcServer struct {
