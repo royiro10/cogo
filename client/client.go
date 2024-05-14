@@ -13,9 +13,9 @@ type CogoClient struct {
 	ipcClient *ipc.IpcClient
 }
 
-func CreateCogoClient(logger *common.Logger) *CogoClient {
+func CreateCogoClient(logger *common.Logger, workdir string) *CogoClient {
 	makeIpcClient := common.MakeRetryable(func() (*ipc.IpcClient, error) {
-		return ipc.MakeIpcClient(logger)
+		return ipc.MakeIpcClient(logger, workdir)
 	}, 3)
 
 	ipcClient, err := makeIpcClient()
