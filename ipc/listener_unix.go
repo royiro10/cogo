@@ -12,7 +12,7 @@ import (
 func MakeIpcServer(logger *common.Logger) (*IpcServer, error) {
 	listener, err := net.Listen("unix", GetUnixConnection())
 	if err != nil {
-		logger.Error("Failed to create Unix domain socket listener:", err)
+		logger.Error("failed to create Unix domain socket listener:", err)
 		os.Remove(GetUnixConnection())
 		return nil, err
 	}

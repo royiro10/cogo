@@ -73,9 +73,9 @@ func (cli *CogoCLI) Handle(args []string, flags *models.CogoCLIFlags) {
 		return
 	}
 
-	cli.logger.Info("unkown command has been run", "command", cmdInfo.Commad)
+	cli.logger.Info("Unknown command has been run", "command", cmdInfo.Commad)
 
-	fmt.Println("Unkown commnad: ", cmdInfo.Commad)
+	fmt.Println("Unknown commnad: ", cmdInfo.Commad)
 	cli.UsageMsg()
 }
 

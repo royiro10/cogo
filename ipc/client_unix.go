@@ -12,7 +12,7 @@ func MakeIpcClient(logger *common.Logger) (*IpcClient, error) {
 	conn, err := net.Dial("unix", GetUnixConnection())
 	if err != nil {
 		logger.Error(
-			"Failed to connect to background process",
+			"failed to connect to background process",
 			"err",
 			err,
 			"addr",

@@ -32,7 +32,7 @@ func CreateCommandService(logger *common.Logger) *CommandService {
 }
 
 func (s *CommandService) HandleCommand(request *models.ExecuteRequest) {
-	s.logger.Info("handle command", "sessionId", request.SessionId, "command", request.Command)
+	s.logger.Info("Hhandle command", "sessionId", request.SessionId, "command", request.Command)
 
 	session := s.getOrCreateSession(request.SessionId)
 
@@ -57,7 +57,7 @@ func (s *CommandService) HandleCommand(request *models.ExecuteRequest) {
 }
 
 func (s *CommandService) HandleKill(request *models.KillRequest) {
-	s.logger.Info("handle kill", "sessionId", request.SessionId)
+	s.logger.Info("Handle kill", "sessionId", request.SessionId)
 
 	session, ok := s.sessions[request.SessionId]
 	if !ok {
@@ -72,7 +72,7 @@ func (s *CommandService) HandleOutput(
 	request *models.OutputRequest,
 	ctx context.Context,
 ) chan *models.StdLine {
-	s.logger.Info("handle output", "sessionId", request.SessionId)
+	s.logger.Info("Handle output", "sessionId", request.SessionId)
 
 	session := s.getOrCreateSession(request.SessionId)
 	outputChan := make(chan *models.StdLine)
@@ -102,7 +102,7 @@ func (s *CommandService) getOutputStream(
 	defer session.stdoutContainer.RemoveListener(&notifyStream)
 
 	<-ctx.Done()
-	s.logger.Info("stop streaming signal was recived")
+	s.logger.Info("Stop streaming signal was recived")
 }
 
 func (s *CommandService) getOutputResult(
@@ -111,14 +111,14 @@ func (s *CommandService) getOutputResult(
 	ctx context.Context,
 ) {
 	output := session.GetOutput(-1)
-	s.logger.Info("output", "view", output)
+	s.logger.Info("Output", "view", output)
 
 	defer close(outputChan)
 
 	for lineIndex, line := range *output {
 		select {
 		case <-ctx.Done():
-			s.logger.Info("stop streaming signal was recived", "outputLineIndex", lineIndex)
+			s.logger.Info("Stop streaming signal was recived", "outputLineIndex", lineIndex)
 			return
 		default:
 			outputChan <- &line
@@ -133,7 +133,7 @@ func (s *CommandService) getOrCreateSession(sessionId string) *Session {
 		s.sessions[sessionId] = session
 
 		s.logger.Debug(
-			"requested session Id does not exists. created new session",
+			"Requested session Id does not exists. created new session",
 			"sessionId",
 			sessionId,
 		)
