@@ -22,7 +22,11 @@ func CreateCommandService(logger *common.Logger) *CommandService {
 		sessions: make(map[string]*Session),
 	}
 
-	service.sessions[DefaultSessionKey] = NewSession(DefaultSessionKey, service.logger, context.TODO())
+	service.sessions[DefaultSessionKey] = NewSession(
+		DefaultSessionKey,
+		service.logger,
+		context.TODO(),
+	)
 
 	return service
 }
@@ -48,9 +52,8 @@ func (s *CommandService) HandleCommand(request *models.ExecuteRequest) {
 	}
 
 	for _, cmd := range commands {
-		session.Run(cmd)
+		session.Run(cmd, request.Workdir)
 	}
-
 }
 
 func (s *CommandService) HandleKill(request *models.KillRequest) {
@@ -65,7 +68,10 @@ func (s *CommandService) HandleKill(request *models.KillRequest) {
 	session.Kill()
 }
 
-func (s *CommandService) HandleOutput(request *models.OutputRequest, ctx context.Context) chan *models.StdLine {
+func (s *CommandService) HandleOutput(
+	request *models.OutputRequest,
+	ctx context.Context,
+) chan *models.StdLine {
 	s.logger.Info("handle output", "sessionId", request.SessionId)
 
 	session := s.getOrCreateSession(request.SessionId)
@@ -83,7 +89,11 @@ func (s *CommandService) HandleOutput(request *models.OutputRequest, ctx context
 	return outputChan
 }
 
-func (s *CommandService) getOutputStream(session *Session, outputChan chan *models.StdLine, ctx context.Context) {
+func (s *CommandService) getOutputStream(
+	session *Session,
+	outputChan chan *models.StdLine,
+	ctx context.Context,
+) {
 	var notifyStream StdListener = func(line *models.StdLine) {
 		outputChan <- line
 	}
@@ -95,7 +105,11 @@ func (s *CommandService) getOutputStream(session *Session, outputChan chan *mode
 	s.logger.Info("stop streaming signal was recived")
 }
 
-func (s *CommandService) getOutputResult(session *Session, outputChan chan *models.StdLine, ctx context.Context) {
+func (s *CommandService) getOutputResult(
+	session *Session,
+	outputChan chan *models.StdLine,
+	ctx context.Context,
+) {
 	output := session.GetOutput(-1)
 	s.logger.Info("output", "view", output)
 
@@ -118,7 +132,11 @@ func (s *CommandService) getOrCreateSession(sessionId string) *Session {
 		session = NewSession(sessionId, s.logger, context.TODO())
 		s.sessions[sessionId] = session
 
-		s.logger.Debug("requested session Id does not exists. created new session", "sessionId", sessionId)
+		s.logger.Debug(
+			"requested session Id does not exists. created new session",
+			"sessionId",
+			sessionId,
+		)
 	}
 
 	return session
