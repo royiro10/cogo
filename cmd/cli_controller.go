@@ -59,12 +59,12 @@ func (cli *CogoCLI) Handle(args []string, flags *models.CogoCLIFlags) {
 	}
 
 	cmdInfo := models.CogoCLIInfo{
-		Commad: args[0],
-		Args:   args[1:],
-		Flags:  flags,
+		Command: args[0],
+		Args:    args[1:],
+		Flags:   flags,
 	}
 
-	if command := cli.commands[cmdInfo.Commad]; command != nil {
+	if command := cli.commands[cmdInfo.Command]; command != nil {
 		err := command(cmdInfo)
 		if err != nil {
 			cli.logger.Fatal(err)
@@ -73,9 +73,9 @@ func (cli *CogoCLI) Handle(args []string, flags *models.CogoCLIFlags) {
 		return
 	}
 
-	cli.logger.Info("Unknown command has been run", "command", cmdInfo.Commad)
+	cli.logger.Info("Unknown command has been run", "command", cmdInfo.Command)
 
-	fmt.Println("Unknown commnad: ", cmdInfo.Commad)
+	fmt.Println("Unknown commnad: ", cmdInfo.Command)
 	cli.UsageMsg()
 }
 
