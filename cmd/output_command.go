@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"fmt"
-	"os"
 
 	"github.com/royiro10/cogo/client"
 	"github.com/royiro10/cogo/common"
@@ -18,11 +17,7 @@ func makeOutputCommand(
 		if !lockService.IsAcquired(GetLockFile()) {
 			return fmt.Errorf("cogo must be start before running commands")
 		}
-		workdir, err := os.Getwd()
-		if err != nil {
-			panic(err)
-		}
-		client := client.CreateCogoClient(logger, workdir)
+		client := client.CreateCogoClient(logger)
 		defer client.Close()
 
 		session := cmdInfo.Flags.Session
