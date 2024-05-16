@@ -22,39 +22,46 @@ func CreateCommandService(logger *common.Logger) *CommandService {
 		sessions: make(map[string]*Session),
 	}
 
-	service.sessions[DefaultSessionKey] = NewSession(DefaultSessionKey, service.logger, context.TODO())
+	service.sessions[DefaultSessionKey] = NewSession(
+		DefaultSessionKey,
+		service.logger,
+		context.TODO(),
+	)
 
 	return service
 }
 
 func (s *CommandService) HandleCommand(request *models.ExecuteRequest) {
-	s.logger.Info("handle command", "sessionId", request.SessionId, "command", request.Command)
+	s.logger.Info("Handle command", "sessionId", request.SessionId, "command", request.Command)
 
 	session := s.getOrCreateSession(request.SessionId)
 
 	args := strings.Fields(request.Command)
 	commands := make([]*exec.Cmd, 0)
 
-	curser := 0
+	cursor := 0
 	for i := 0; i < len(args); i++ {
 		if args[i] == "&&" {
-			commands = append(commands, exec.Command(args[curser], args[curser+1:i]...))
-			curser = i + 1
+			cmd := exec.Command(args[cursor], args[cursor+1:i]...)
+			cmd.Dir = request.Workdir
+			commands = append(commands, cmd)
+			cursor = i + 1
 		}
 	}
 
-	if curser != len(args) {
-		commands = append(commands, exec.Command(args[curser], args[curser+1:]...))
+	if cursor != len(args) {
+		cmd := exec.Command(args[cursor], args[cursor+1:]...)
+		cmd.Dir = request.Workdir
+		commands = append(commands, cmd)
 	}
 
 	for _, cmd := range commands {
 		session.Run(cmd)
 	}
-
 }
 
 func (s *CommandService) HandleKill(request *models.KillRequest) {
-	s.logger.Info("handle kill", "sessionId", request.SessionId)
+	s.logger.Info("Handle kill", "sessionId", request.SessionId)
 
 	session, ok := s.sessions[request.SessionId]
 	if !ok {
@@ -65,8 +72,11 @@ func (s *CommandService) HandleKill(request *models.KillRequest) {
 	session.Kill()
 }
 
-func (s *CommandService) HandleOutput(request *models.OutputRequest, ctx context.Context) chan *models.StdLine {
-	s.logger.Info("handle output", "sessionId", request.SessionId)
+func (s *CommandService) HandleOutput(
+	request *models.OutputRequest,
+	ctx context.Context,
+) chan *models.StdLine {
+	s.logger.Info("Handle output", "sessionId", request.SessionId)
 
 	session := s.getOrCreateSession(request.SessionId)
 	outputChan := make(chan *models.StdLine)
@@ -83,7 +93,11 @@ func (s *CommandService) HandleOutput(request *models.OutputRequest, ctx context
 	return outputChan
 }
 
-func (s *CommandService) getOutputStream(session *Session, outputChan chan *models.StdLine, ctx context.Context) {
+func (s *CommandService) getOutputStream(
+	session *Session,
+	outputChan chan *models.StdLine,
+	ctx context.Context,
+) {
 	var notifyStream StdListener = func(line *models.StdLine) {
 		outputChan <- line
 	}
@@ -92,19 +106,23 @@ func (s *CommandService) getOutputStream(session *Session, outputChan chan *mode
 	defer session.stdoutContainer.RemoveListener(&notifyStream)
 
 	<-ctx.Done()
-	s.logger.Info("stop streaming signal was recived")
+	s.logger.Info("Stop streaming signal was recived")
 }
 
-func (s *CommandService) getOutputResult(session *Session, outputChan chan *models.StdLine, ctx context.Context) {
+func (s *CommandService) getOutputResult(
+	session *Session,
+	outputChan chan *models.StdLine,
+	ctx context.Context,
+) {
 	output := session.GetOutput(-1)
-	s.logger.Info("output", "view", output)
+	s.logger.Info("Output", "view", output)
 
 	defer close(outputChan)
 
 	for lineIndex, line := range *output {
 		select {
 		case <-ctx.Done():
-			s.logger.Info("stop streaming signal was recived", "outputLineIndex", lineIndex)
+			s.logger.Info("Stop streaming signal was recived", "outputLineIndex", lineIndex)
 			return
 		default:
 			outputChan <- &line
@@ -118,7 +136,11 @@ func (s *CommandService) getOrCreateSession(sessionId string) *Session {
 		session = NewSession(sessionId, s.logger, context.TODO())
 		s.sessions[sessionId] = session
 
-		s.logger.Debug("requested session Id does not exists. created new session", "sessionId", sessionId)
+		s.logger.Debug(
+			"Requested session Id does not exists. created new session",
+			"sessionId",
+			sessionId,
+		)
 	}
 
 	return session

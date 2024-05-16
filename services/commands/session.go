@@ -54,7 +54,7 @@ func NewSession(sessionId string, logger *common.Logger, ctx context.Context) *S
 		s.stderrContainer.AddListener(makePipeLogger(s.stderrContainer, logger))
 		s.stdinContainer.AddListener(makePipeLogger(s.stdinContainer, logger))
 
-		logger.Debug("registered pipe logging")
+		logger.Debug("Registered pipe logging")
 	}
 
 	return s
@@ -71,7 +71,7 @@ func (s *Session) Run(cmd *exec.Cmd) {
 func (s *Session) Kill() {
 	s.stopCommandExecution()
 	s.cancel()
-	s.logger.Info("killed session", "sessionId", s.ID)
+	s.logger.Info("Killed session", "sessionId", s.ID)
 }
 
 func (s *Session) GetOutput(tailCount int) *[]models.StdLine {
@@ -98,6 +98,7 @@ func (s *Session) startCommandExecution() {
 
 			default:
 				s.stderrContainer.NotifyChan <- models.StdLine{
+					Cwd:  s.runningCommand.Dir,
 					Time: time.Now(),
 					Data: err.Error(),
 				}
@@ -154,8 +155,8 @@ func (s *Session) executeCommand(cmd *exec.Cmd) error {
 		return err
 	}
 
-	go readPipe(stdout, s.stdoutContainer.NotifyChan)
-	go readPipe(stderr, s.stderrContainer.NotifyChan)
+	go readPipe(stdout, s.stdoutContainer.NotifyChan, cmd.Dir)
+	go readPipe(stderr, s.stderrContainer.NotifyChan, cmd.Dir)
 
 	err = cmd.Start()
 	if err != nil {
