@@ -98,6 +98,7 @@ func (s *Session) startCommandExecution() {
 
 			default:
 				s.stderrContainer.NotifyChan <- models.StdLine{
+					Cwd:  s.runningCommand.Dir,
 					Time: time.Now(),
 					Data: err.Error(),
 				}
@@ -154,8 +155,8 @@ func (s *Session) executeCommand(cmd *exec.Cmd) error {
 		return err
 	}
 
-	go readPipe(stdout, s.stdoutContainer.NotifyChan)
-	go readPipe(stderr, s.stderrContainer.NotifyChan)
+	go readPipe(stdout, s.stdoutContainer.NotifyChan, cmd.Dir)
+	go readPipe(stderr, s.stderrContainer.NotifyChan, cmd.Dir)
 
 	err = cmd.Start()
 	if err != nil {
