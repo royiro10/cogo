@@ -90,7 +90,7 @@ func (daemon *CogoDaemon) handleMessage(conn net.Conn) {
 		for output := range daemon.commandService.HandleOutput(req, ctx) {
 			daemon.logger.Info("sending", "output", output)
 
-			if err := daemon.Output(conn, output); err != nil {
+			if err := daemon.Output(conn, &output); err != nil {
 				daemon.logger.Warn("a connection has been closed while streaming, stop streaming")
 				cancel()
 			}
