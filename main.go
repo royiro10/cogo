@@ -23,9 +23,10 @@ func main() {
 	if flags.IsLogging {
 		level := slog.LevelDebug
 		logger = common.CreateLogger(&common.LoggerOptions{
-			LogPath: "./logs",
+			LogPath: common.JoinWithBaseDir("logs"),
 			LogFile: fmt.Sprintf("cogo_%d.log", os.Getpid()),
-			Level:   &level})
+			Level:   &level,
+		})
 	}
 
 	commandService := commands.CreateCommandService(logger)

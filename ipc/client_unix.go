@@ -9,9 +9,15 @@ import (
 )
 
 func MakeIpcClient(logger *common.Logger) (*IpcClient, error) {
-	conn, err := net.Dial("unix", COGO_CONN_UNIX)
+	conn, err := net.Dial("unix", GetUnixConnection())
 	if err != nil {
-		logger.Error("Failed to connect to background process", "err", err, "addr", COGO_CONN_UNIX)
+		logger.Error(
+			"failed to connect to background process",
+			"err",
+			err,
+			"addr",
+			GetUnixConnection(),
+		)
 		return nil, err
 	}
 

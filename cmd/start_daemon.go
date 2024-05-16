@@ -9,7 +9,10 @@ import (
 	"github.com/royiro10/cogo/models"
 )
 
-func makeHandleStartDaemon(lockService common.LockService, logger *common.Logger) models.CogoCLICommand {
+func makeHandleStartDaemon(
+	lockService common.LockService,
+	logger *common.Logger,
+) models.CogoCLICommand {
 	return func(cci models.CogoCLIInfo) error {
 		_, err := startDaemon(lockService, logger)
 		return err
@@ -17,7 +20,7 @@ func makeHandleStartDaemon(lockService common.LockService, logger *common.Logger
 }
 
 func startDaemon(lockService common.LockService, logger *common.Logger) (bool, error) {
-	if lockService.IsAcquired(LOCK_FILE) {
+	if lockService.IsAcquired(GetLockFile()) {
 		logger.Info("Daemon is already running.")
 		return false, nil
 	}

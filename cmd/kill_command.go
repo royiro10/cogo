@@ -11,10 +11,9 @@ import (
 
 func makeKillCommand(lockService common.LockService, logger *common.Logger) models.CogoCLICommand {
 	return func(cmdInfo models.CogoCLIInfo) error {
-		if !lockService.IsAcquired(LOCK_FILE) {
+		if !lockService.IsAcquired(GetLockFile()) {
 			return fmt.Errorf("cogo must be start before running commands")
 		}
-
 		client := client.CreateCogoClient(logger)
 		defer client.Close()
 

@@ -77,7 +77,7 @@ func (client *CogoClient) Close() {
 }
 
 func (client *CogoClient) sendData(request models.CogoMessage) {
-	client.logger.Debug("send command", "type", request.GetDetails().Type, "request", request)
+	client.logger.Debug("Send command", "type", request.GetDetails().Type, "request", request)
 
 	if err := ipc.SendMsg(client.ipcClient.Conn, request); err != nil {
 		client.logger.Error("could not send request", "reason", err.Error())
