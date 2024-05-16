@@ -60,12 +60,12 @@ func NewSession(sessionId string, logger *common.Logger, ctx context.Context) *S
 	return s
 }
 
-func (s *Session) Run(cmd *exec.Cmd, workdir string) {
+func (s *Session) Run(cmd *exec.Cmd) {
 	s.queueMu.Lock()
 	defer s.queueMu.Unlock()
 
 	s.commandQueue = append(s.commandQueue, cmd)
-	go s.startCommandExecution(workdir)
+	go s.startCommandExecution()
 }
 
 func (s *Session) Kill() {
@@ -84,14 +84,14 @@ func (s *Session) GetOutput(tailCount int) *[]models.StdLine {
 	return &output
 }
 
-func (s *Session) startCommandExecution(workdir string) {
+func (s *Session) startCommandExecution() {
 	if !s.executionMu.TryLock() {
 		return
 	}
 	defer s.executionMu.Unlock()
 
 	for s.runningCommand = s.popCommand(); s.runningCommand != nil; s.runningCommand = s.popCommand() {
-		err := s.executeCommand(s.runningCommand, workdir)
+		err := s.executeCommand(s.runningCommand)
 		if err != nil {
 			select {
 			case <-s.killChan:
@@ -142,9 +142,8 @@ func (s *Session) stopCommandExecution() {
 	}
 }
 
-func (s *Session) executeCommand(cmd *exec.Cmd, workdir string) error {
+func (s *Session) executeCommand(cmd *exec.Cmd) error {
 	s.logger.Debug("execution", "command", cmd.String())
-	cmd.Dir = workdir
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
 		return err

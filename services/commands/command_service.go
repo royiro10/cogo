@@ -32,27 +32,31 @@ func CreateCommandService(logger *common.Logger) *CommandService {
 }
 
 func (s *CommandService) HandleCommand(request *models.ExecuteRequest) {
-	s.logger.Info("Hhandle command", "sessionId", request.SessionId, "command", request.Command)
+	s.logger.Info("Handle command", "sessionId", request.SessionId, "command", request.Command)
 
 	session := s.getOrCreateSession(request.SessionId)
 
 	args := strings.Fields(request.Command)
 	commands := make([]*exec.Cmd, 0)
 
-	curser := 0
+	cursor := 0
 	for i := 0; i < len(args); i++ {
 		if args[i] == "&&" {
-			commands = append(commands, exec.Command(args[curser], args[curser+1:i]...))
-			curser = i + 1
+			cmd := exec.Command(args[cursor], args[cursor+1:i]...)
+			cmd.Dir = request.Workdir
+			commands = append(commands, cmd)
+			cursor = i + 1
 		}
 	}
 
-	if curser != len(args) {
-		commands = append(commands, exec.Command(args[curser], args[curser+1:]...))
+	if cursor != len(args) {
+		cmd := exec.Command(args[cursor], args[cursor+1:]...)
+		cmd.Dir = request.Workdir
+		commands = append(commands, cmd)
 	}
 
 	for _, cmd := range commands {
-		session.Run(cmd, request.Workdir)
+		session.Run(cmd)
 	}
 }
 
