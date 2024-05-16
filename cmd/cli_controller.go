@@ -31,7 +31,7 @@ type CogoCLI struct {
 }
 
 func GetLockFile() string {
-	return common.JoinWithWorkDir(LOCK_FILE)
+	return common.JoinWithBaseDir(LOCK_FILE)
 }
 
 func CreateCLI(deps CogoCLIDeps) *CogoCLI {

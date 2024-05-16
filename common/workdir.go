@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 )
 
-func JoinWithWorkDir(paths ...string) string {
+func JoinWithBaseDir(paths ...string) string {
 	exe, err := os.Executable()
 	if err != nil {
 		panic(err)

@@ -41,5 +41,5 @@ type IpcPacket struct {
 }
 
 func GetUnixConnection() string {
-	return common.JoinWithWorkDir(COGO_CONN_UNIX)
+	return common.JoinWithBaseDir(COGO_CONN_UNIX)
 }
