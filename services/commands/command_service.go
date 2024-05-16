@@ -75,11 +75,11 @@ func (s *CommandService) HandleKill(request *models.KillRequest) {
 func (s *CommandService) HandleOutput(
 	request *models.OutputRequest,
 	ctx context.Context,
-) chan *models.StdLine {
+) chan models.StdLine {
 	s.logger.Info("Handle output", "sessionId", request.SessionId)
 
 	session := s.getOrCreateSession(request.SessionId)
-	outputChan := make(chan *models.StdLine)
+	outputChan := make(chan models.StdLine)
 
 	switch isStream := request.IsStream; isStream {
 	case true:
@@ -95,11 +95,11 @@ func (s *CommandService) HandleOutput(
 
 func (s *CommandService) getOutputStream(
 	session *Session,
-	outputChan chan *models.StdLine,
+	outputChan chan models.StdLine,
 	ctx context.Context,
 ) {
 	var notifyStream StdListener = func(line *models.StdLine) {
-		outputChan <- line
+		outputChan <- *line
 	}
 
 	session.stdoutContainer.AddListener(&notifyStream)
@@ -111,7 +111,7 @@ func (s *CommandService) getOutputStream(
 
 func (s *CommandService) getOutputResult(
 	session *Session,
-	outputChan chan *models.StdLine,
+	outputChan chan models.StdLine,
 	ctx context.Context,
 ) {
 	output := session.GetOutput(-1)
@@ -125,7 +125,7 @@ func (s *CommandService) getOutputResult(
 			s.logger.Info("Stop streaming signal was recived", "outputLineIndex", lineIndex)
 			return
 		default:
-			outputChan <- &line
+			outputChan <- line
 		}
 	}
 }
