@@ -10,6 +10,14 @@ import (
 	"github.com/royiro10/cogo/models"
 )
 
+type SessionStatus string
+
+const (
+	IdleStatus    SessionStatus = "Idle"
+	RunningStatus SessionStatus = "Running"
+	ErrorStatus   SessionStatus = "Error"
+)
+
 type Session struct {
 	ID string
 
@@ -17,7 +25,10 @@ type Session struct {
 	executionMu    sync.Mutex
 	runningCommand *exec.Cmd
 	commandQueue   []*exec.Cmd
+	commandHistory []*exec.Cmd
 	killChan       chan struct{}
+
+	LastActionTime time.Time
 
 	stdoutContainer *StdContainer
 	stderrContainer *StdContainer
@@ -32,8 +43,10 @@ func NewSession(sessionId string, logger *common.Logger, ctx context.Context) *S
 	s := &Session{
 		ID: sessionId,
 
-		commandQueue: make([]*exec.Cmd, 0),
-		killChan:     make(chan struct{}),
+		commandQueue:   make([]*exec.Cmd, 0),
+		killChan:       make(chan struct{}),
+		commandHistory: make([]*exec.Cmd, 0),
+		LastActionTime: time.Now(),
 
 		stdoutContainer: NewStdContainer("STDOUT"),
 		stderrContainer: NewStdContainer("STDERR"),
@@ -84,6 +97,57 @@ func (s *Session) GetOutput(tailCount int) *[]models.StdLine {
 	return &output
 }
 
+func (s *Session) GetOutputSize() int {
+	return len(s.stdoutContainer.View())
+}
+
+func (s *Session) GetHistory() []*exec.Cmd {
+	history := make([]*exec.Cmd, len(s.commandHistory))
+	for i, p := range s.commandHistory {
+		if p == nil {
+			continue
+		}
+		v := *p
+		history[i] = &v
+	}
+
+	return history
+}
+
+func (s *Session) GetExecutionQueueSize() int {
+	return len(s.commandQueue)
+}
+
+func (s *Session) GetStatus() SessionStatus {
+	if s.runningCommand != nil {
+		return RunningStatus
+	}
+
+	lastOutputLines := s.stdoutContainer.ViewTail(1)
+	lastErrorLines := s.stderrContainer.ViewTail(1)
+
+	if len(lastOutputLines) < 1 {
+		if len(lastErrorLines) < 1 {
+			return IdleStatus
+		}
+
+		return ErrorStatus
+	}
+
+	if len(lastErrorLines) < 1 {
+		return IdleStatus
+	}
+
+	lastOutputLine := lastOutputLines[len(lastOutputLines)-1]
+	lastErrorLine := lastErrorLines[len(lastErrorLines)-1]
+
+	if lastErrorLine.Time.After(lastOutputLine.Time) {
+		return ErrorStatus
+	}
+
+	return RunningStatus
+}
+
 func (s *Session) startCommandExecution() {
 	if !s.executionMu.TryLock() {
 		return
@@ -91,6 +155,8 @@ func (s *Session) startCommandExecution() {
 	defer s.executionMu.Unlock()
 
 	for s.runningCommand = s.popCommand(); s.runningCommand != nil; s.runningCommand = s.popCommand() {
+		s.LastActionTime = time.Now()
+		s.commandHistory = append(s.commandHistory, s.runningCommand)
 		err := s.executeCommand(s.runningCommand)
 		if err != nil {
 			select {

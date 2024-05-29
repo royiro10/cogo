@@ -97,6 +97,28 @@ func (daemon *CogoDaemon) handleMessage(conn net.Conn) {
 		}
 
 		_ = daemon.Ack(conn)
+	case *models.ListSessionsRequest:
+		res := daemon.commandService.HandleListSessions(req)
+		daemon.sendResponse(conn, res)
+
+		_ = daemon.Ack(conn)
+
+	case *models.StatusRequest:
+		ctx, cancel := context.WithCancel(context.TODO())
+		defer cancel()
+
+		for status := range daemon.commandService.HandleStatus(req, ctx) {
+			daemon.logger.Info("sending", "status", status)
+
+			if err := daemon.sendResponse(conn, models.NewStatusResponse(req.SessionId, *status)); err != nil {
+				daemon.logger.Warn("a connection has been closed while streaming, stop streaming")
+				cancel()
+			}
+		}
+
+		daemon.logger.Info("status done")
+		_ = daemon.Ack(conn)
+
 	default:
 		errMsg := "unknown request type"
 		logger.Error(errMsg, "request", msg, "type", req)

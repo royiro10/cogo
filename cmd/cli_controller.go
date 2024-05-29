@@ -16,6 +16,7 @@ const (
 	RUN_COMMAND    = "run"
 	KILL_COMMAND   = "kill"
 	OUTPUT_COMMAND = "output"
+	STATUS_COMMAND = "status"
 	UNKOWN         = "unkown"
 )
 
@@ -42,6 +43,7 @@ func CreateCLI(deps CogoCLIDeps) *CogoCLI {
 		RUN_COMMAND:    makeRunCommand(deps.LockService, deps.Logger),
 		KILL_COMMAND:   makeKillCommand(deps.LockService, deps.Logger),
 		OUTPUT_COMMAND: makeOutputCommand(deps.LockService, deps.Logger),
+		STATUS_COMMAND: makeStatusCommand(deps.LockService, deps.Logger),
 	}
 
 	service := &CogoCLI{
@@ -88,6 +90,7 @@ func (cli *CogoCLI) UsageMsg() {
 	  run "command"              Run a command in the background.
 	  kill                       Kill a running command.
 	  output                     Retrieve the output of a specific session.
+	  status                     Get Cogo sessions' status
 	
 	Flags:
 	  -s, --session <session-id> Specify a session to interact with.

@@ -55,6 +55,10 @@ func (sc *StdContainer) ViewTail(count int) []models.StdLine {
 	sc.mu.Lock()
 	defer sc.mu.Unlock()
 
+	if count > len(sc.view) {
+		return make([]models.StdLine, 0)
+	}
+
 	return sc.view[len(sc.view)-count:]
 }
 
