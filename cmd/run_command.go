@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"os"
 	"strings"
 
 	"github.com/royiro10/cogo/client"
@@ -12,11 +13,10 @@ import (
 
 func makeRunCommand(lockService common.LockService, logger *common.Logger) models.CogoCLICommand {
 	return func(cmdInfo models.CogoCLIInfo) error {
-		if !lockService.IsAcquired(LOCK_FILE) {
+		if !lockService.IsAcquired(GetLockFile()) {
 			// TODO: automaticcly start daemon
 			return fmt.Errorf("cogo must be start before running commands")
 		}
-
 		client := client.CreateCogoClient(logger)
 		defer client.Close()
 
@@ -24,7 +24,12 @@ func makeRunCommand(lockService common.LockService, logger *common.Logger) model
 		if session == "" {
 			session = commands.DefaultSessionKey
 		}
-
-		return client.Run(models.NewExecuteRequest(session, strings.Join(cmdInfo.Args[:], " ")))
+		workdir, err := os.Getwd()
+		if err != nil {
+			logger.Fatal(err)
+		}
+		return client.Run(
+			models.NewExecuteRequest(session, strings.Join(cmdInfo.Args[:], " "), workdir),
+		)
 	}
 }

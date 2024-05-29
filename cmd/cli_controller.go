@@ -31,6 +31,10 @@ type CogoCLI struct {
 	commands map[string]models.CogoCLICommand
 }
 
+func GetLockFile() string {
+	return common.JoinWithBaseDir(LOCK_FILE)
+}
+
 func CreateCLI(deps CogoCLIDeps) *CogoCLI {
 	commands := map[string]models.CogoCLICommand{
 		RUN_DAEMON:     makeHandleRunAsDaemon(deps.LockService, deps.Logger, deps.CogoDaemon),
@@ -57,12 +61,12 @@ func (cli *CogoCLI) Handle(args []string, flags *models.CogoCLIFlags) {
 	}
 
 	cmdInfo := models.CogoCLIInfo{
-		Commad: args[0],
-		Args:   args[1:],
-		Flags:  flags,
+		Command: args[0],
+		Args:    args[1:],
+		Flags:   flags,
 	}
 
-	if command := cli.commands[cmdInfo.Commad]; command != nil {
+	if command := cli.commands[cmdInfo.Command]; command != nil {
 		err := command(cmdInfo)
 		if err != nil {
 			cli.logger.Fatal(err)
@@ -71,9 +75,9 @@ func (cli *CogoCLI) Handle(args []string, flags *models.CogoCLIFlags) {
 		return
 	}
 
-	cli.logger.Info("unkown command has been run", "command", cmdInfo.Commad)
+	cli.logger.Info("Unknown command has been run", "command", cmdInfo.Command)
 
-	fmt.Println("Unkown commnad: ", cmdInfo.Commad)
+	fmt.Println("Unknown commnad: ", cmdInfo.Command)
 	cli.UsageMsg()
 }
 

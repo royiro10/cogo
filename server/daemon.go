@@ -88,9 +88,9 @@ func (daemon *CogoDaemon) handleMessage(conn net.Conn) {
 		defer cancel()
 
 		for output := range daemon.commandService.HandleOutput(req, ctx) {
-			daemon.logger.Info("sending", "output", output)
+			daemon.logger.Info("Sending", "output", output)
 
-			if err := daemon.Output(conn, output); err != nil {
+			if err := daemon.Output(conn, &output); err != nil {
 				daemon.logger.Warn("a connection has been closed while streaming, stop streaming")
 				cancel()
 			}
@@ -120,7 +120,7 @@ func (daemon *CogoDaemon) handleMessage(conn net.Conn) {
 		_ = daemon.Ack(conn)
 
 	default:
-		errMsg := "unkown request type"
+		errMsg := "unknown request type"
 		logger.Error(errMsg, "request", msg, "type", req)
 		if err := daemon.Err(conn, errors.New(errMsg)); err != nil {
 			logger.Error("failed to send error response to connection", "remoteAddr", conn.RemoteAddr().String())

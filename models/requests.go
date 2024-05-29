@@ -43,13 +43,15 @@ type ExecuteRequest struct {
 	BaseCogoMessage
 	SessionId string
 	Command   string
+	Workdir   string
 }
 
-func NewExecuteRequest(sessionId string, command string) *ExecuteRequest {
+func NewExecuteRequest(sessionId string, command string, workdir string) *ExecuteRequest {
 	return &ExecuteRequest{
 		BaseCogoMessage: BaseCogoMessage{ExecuteRequestDetails},
 		SessionId:       sessionId,
 		Command:         command,
+		Workdir:         workdir,
 	}
 }
 

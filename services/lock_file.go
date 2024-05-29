@@ -60,7 +60,7 @@ func (s *LockFileService) GetLockCommit(lockName string) (*models.LockCommit, er
 
 func (s *LockFileService) acquireLockFile(lockFile string) error {
 	if s.IsAcquired(lockFile) {
-		return fmt.Errorf("can not acquire, already locked")
+		return fmt.Errorf("cannot acquire, already locked")
 	}
 
 	f, err := os.OpenFile(lockFile, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0600)
@@ -76,12 +76,12 @@ func (s *LockFileService) acquireLockFile(lockFile string) error {
 
 	jsonData, err := json.Marshal(lockCommit)
 	if err != nil {
-		s.logger.Error("could not marshel lockCommit", "err", err)
+		s.logger.Error("could not marshal lockCommit", "err", err)
 		return err
 	}
 
 	if _, err := f.Write(jsonData); err != nil {
-		s.logger.Error("could write commit lock to file", "err", err, "file", lockFile)
+		s.logger.Error("could not write commit lock to file", "err", err, "file", lockFile)
 		return err
 	}
 
@@ -103,7 +103,7 @@ func (s *LockFileService) releaseLockFile(lockFile string) error {
 		return fmt.Errorf("could not release lock file: %v", err)
 	}
 
-	s.logger.Info("released lock file", "previus", lockCommit)
+	s.logger.Info("Released lock file", "previus", lockCommit)
 	return nil
 }
 

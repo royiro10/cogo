@@ -8,9 +8,12 @@ import (
 	"github.com/royiro10/cogo/util"
 )
 
-func makeHandleStopDaemon(lockService common.LockService, logger *common.Logger) models.CogoCLICommand {
+func makeHandleStopDaemon(
+	lockService common.LockService,
+	logger *common.Logger,
+) models.CogoCLICommand {
 	handleStopDaemon := func(cmdInfo models.CogoCLIInfo) error {
-		lockCommit, err := lockService.GetLockCommit(LOCK_FILE)
+		lockCommit, err := lockService.GetLockCommit(GetLockFile())
 		if err != nil {
 			return fmt.Errorf("can not get commited lock: %w", err)
 		}
@@ -23,7 +26,7 @@ func makeHandleStopDaemon(lockService common.LockService, logger *common.Logger)
 			}
 		}
 
-		return lockService.Release(LOCK_FILE)
+		return lockService.Release(GetLockFile())
 	}
 
 	return handleStopDaemon

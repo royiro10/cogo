@@ -11,7 +11,7 @@ import (
 func MakeIpcServer(logger *common.Logger) (*IpcServer, error) {
 	listener, err := net.Listen("tcp", COGO_CONN_WIN32)
 	if err != nil {
-		logger.Error("Failed to start TCP server:", err)
+		logger.Error("failed to start TCP server:", err)
 		return nil, err
 	}
 
