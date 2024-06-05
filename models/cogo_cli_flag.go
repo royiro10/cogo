@@ -6,4 +6,6 @@ type CogoCLIFlags struct {
 	Session string
 
 	IsStream bool
+
+	RestartOnFailure bool
 }
