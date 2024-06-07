@@ -22,8 +22,8 @@ func InitFlags() *models.CogoCLIFlags {
 	flag.BoolVar(&cogoFlags.IsStream, "f", false, isStreamMsg)
 
 	restartMsg := "Should restart on failure"
-	flag.BoolVar(&cogoFlags.RestartOnFailure, "restart", false, restartMsg)
-	flag.BoolVar(&cogoFlags.RestartOnFailure, "r", false, restartMsg)
+	flag.BoolVar(&cogoFlags.IsRestart, "restart", false, restartMsg)
+	flag.BoolVar(&cogoFlags.IsRestart, "r", false, restartMsg)
 
 	flag.Parse()
 

@@ -7,5 +7,5 @@ type CogoCLIFlags struct {
 
 	IsStream bool
 
-	RestartOnFailure bool
+	IsRestart bool
 }
