@@ -44,14 +44,21 @@ type ExecuteRequest struct {
 	SessionId string
 	Command   string
 	Workdir   string
+	IsRestart bool
 }
 
-func NewExecuteRequest(sessionId string, command string, workdir string) *ExecuteRequest {
+func NewExecuteRequest(
+	sessionId string,
+	command string,
+	workdir string,
+	isRestart bool,
+) *ExecuteRequest {
 	return &ExecuteRequest{
 		BaseCogoMessage: BaseCogoMessage{ExecuteRequestDetails},
 		SessionId:       sessionId,
 		Command:         command,
 		Workdir:         workdir,
+		IsRestart:       isRestart,
 	}
 }
 
