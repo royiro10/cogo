@@ -20,7 +20,7 @@ func makeHandleRunAsDaemon(
 	handleDaemon := func(cmdInfo models.CogoCLIInfo) error {
 		if lockService.IsAcquired(GetLockFile()) {
 			logger.Info("Daemon is already running.")
-			return fmt.Errorf("Daemon is already running.")
+			return fmt.Errorf("daemon is already running")
 		}
 
 		release, err := lockService.Acquire(GetLockFile())
