@@ -157,8 +157,7 @@ func (s *Session) startCommandExecution() {
 	for s.runningCommand = s.popCommand(); s.runningCommand != nil; s.runningCommand = s.popCommand() {
 		s.LastActionTime = time.Now()
 		s.commandHistory = append(s.commandHistory, s.runningCommand)
-		err := s.executeCommand(s.runningCommand)
-		if err != nil {
+		for err := s.executeCommand(s.runningCommand); err != nil; {
 			select {
 			case <-s.killChan:
 
@@ -169,6 +168,7 @@ func (s *Session) startCommandExecution() {
 					Data: err.Error(),
 				}
 			}
+			time.Sleep(2 * time.Second)
 		}
 	}
 }

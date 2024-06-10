@@ -29,7 +29,12 @@ func makeRunCommand(lockService common.LockService, logger *common.Logger) model
 			logger.Fatal(err)
 		}
 		return client.Run(
-			models.NewExecuteRequest(session, strings.Join(cmdInfo.Args[:], " "), workdir),
+			models.NewExecuteRequest(
+				session,
+				strings.Join(cmdInfo.Args[:], " "),
+				workdir,
+				cmdInfo.Flags.IsRestart,
+			),
 		)
 	}
 }

@@ -96,6 +96,7 @@ func (cli *CogoCLI) UsageMsg() {
 	  -s, --session <session-id> Specify a session to interact with.
 	  -l, --logger               Enable logging.
 	  -f, --follow               Stream the output of the running command.
+	  -r, --restart              Restart the cogo session on failure.
 	
 Please refer to the README.md for more detailed information on each command and their usage.`
 

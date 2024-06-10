@@ -13,7 +13,7 @@ clear:
 # to allow for gracefull shutdown
 	sleep 1 
 	
-	-rm $(OUT_EXEC_FILE) ./$(PROJECT_NAME).lock
+	-rm $(OUT_EXEC_FILE) ./$(PROJECT_NAME).lock ./$(PROJECT_NAME) ./$(PROJECT_NAME).sock
 	-find . -wholename "$($(PROJECT_NAME))*.log" -delete
 
 
@@ -37,7 +37,8 @@ DAEMON_LOG_FILE=$(shell find ./logs -name "$(PROJECT_NAME)_$(DAEMON_PID).log")
 END_COLOR=\033[0m
 COLOR_RED=\033[0;31m
 COLOR_GREEN=\033[0;32m
-COLOR_YELLOW=\033[0;32m
+COLOR_YELLOW=\033[0;33m
+COLOR_CYAN=\033[0;36m
 
 daemon_logs:
 	@tail -f ${DAEMON_LOG_FILE} | while read line; \
@@ -48,6 +49,8 @@ daemon_logs:
 			echo -e "$(COLOR_GREEN)level=$${line#*level=}$(END_COLOR)"; \
 		elif echo "$${line}" | grep -q "level=WARN"; then \
 			echo -e "$(COLOR_YELLOW)level=$${line#*level=}$(END_COLOR)"; \
+		elif echo "$${line}" | grep -q "level=INFO"; then \
+			echo -e "$(COLOR_CYAN)level=$${line#*level=}$(END_COLOR)"; \
 		else \
 			echo "level=$${line#*level=}"; \
 		fi; \
