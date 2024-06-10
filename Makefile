@@ -13,7 +13,7 @@ clear:
 # to allow for gracefull shutdown
 	sleep 1 
 	
-	-rm $(OUT_EXEC_FILE) ./$(PROJECT_NAME).lock
+	-rm $(OUT_EXEC_FILE) ./$(PROJECT_NAME).lock ./$(PROJECT_NAME) ./$(PROJECT_NAME).sock
 	-find . -wholename "$($(PROJECT_NAME))*.log" -delete
 
 
